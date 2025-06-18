@@ -1,12 +1,13 @@
-import React from "react";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-const Dashboard = () => {
+export default function Dashboard() {
   return (
-    <div className="min-h-screen p-4">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p>Welcome to the ATB Platform!</p>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Welcome to Anacaona Transcript Bridge</h1>
+      <Link to="/submit-transcript" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+        Submit Transcript
+      </Link>
     </div>
   );
-};
-
-export default Dashboard;
+}

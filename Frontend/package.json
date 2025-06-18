@@ -12,10 +12,13 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.10.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.18.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "ui": "github:shadcn/ui"
   },
   "description": "",
   "browserslist": {
@@ -29,5 +32,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.6"
   }
 }
