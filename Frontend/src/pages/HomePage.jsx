@@ -1,24 +1,18 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import HomeNavbar from "../components/HomeNavbar";
 
 export default function HomePage() {
   return (
     <div className="font-sans text-gray-800">
       {/* ===== NAVBAR ===== */}
-      <header className="bg-white shadow-md fixed top-0 left-0 w-full z-50 px-8 py-4 flex justify-between items-center">
-        <div className="text-2xl font-bold text-blue-700">Anacaona Bridge</div>
-        <nav className="space-x-6 hidden md:flex">
-          <a href="#mission" className="hover:text-blue-600">Mission</a>
-          <a href="#services" className="hover:text-blue-600">Services</a>
-          <a href="#news" className="hover:text-blue-600">News</a>
-          <a href="#contact" className="hover:text-blue-600">Contact</a>
-          <Link to="/login" className="bg-blue-600 text-white px-4 py-2 rounded">Login</Link>
-        </nav>
-      </header>
+      <HomeNavbar />
 
       {/* ===== HERO SECTION ===== */}
       <section className="min-h-screen bg-blue-50 flex items-center justify-center text-center px-8 pt-32">
-        <div>
+        
+        <div> 
+          
           <h1 className="text-4xl font-bold text-blue-900">Bridge the Gap Between Your Education and Your Future</h1>
           <p className="mt-4 text-lg text-gray-700">Submit transcripts from Haiti. Reach global recognition with ease.</p>
           <Link to="/register" className="mt-6 inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
@@ -48,6 +42,10 @@ export default function HomePage() {
             <p className="text-gray-600">Easily upload and verify your academic transcripts.</p>
           </div>
           <div className="bg-white shadow p-6 rounded-lg">
+            <h3 className="text-xl font-semibold mb-2">Translate your documents</h3>
+            <p className="text-gray-600">We offer the translation services to make your life easier.</p>
+          </div>
+          <div className="bg-white shadow p-6 rounded-lg">
             <h3 className="text-xl font-semibold mb-2">WES Integration</h3>
             <p className="text-gray-600">We send your documents to credential evaluation services like WES.</p>
           </div>
@@ -64,7 +62,7 @@ export default function HomePage() {
         <ul className="space-y-4 text-center max-w-3xl mx-auto">
           <li><strong>May 2025:</strong> Partnered with Haitian Ministry of Education for data access.</li>
           <li><strong>June 2025:</strong> First 100 students successfully submitted transcripts to WES.</li>
-          <li><strong>Coming Soon:</strong> Multilingual support for Creole and French.</li>
+          <li><strong>Coming Soon:</strong> Multilingual support for Creole, spanish and French.</li>
         </ul>
       </section>
 
@@ -81,12 +79,19 @@ export default function HomePage() {
 
       {/* ===== FOOTER ===== */}
       <footer className="bg-gray-800 text-white py-6 text-center">
+      <article className="clearfix px-4 max-w-4xl mx-auto text-center">
+        <img
+          className="h-20 w-40 object-contain float-left"
+          src="/img/anacaona.jpg"
+          alt="Anacaona Logo"
+        />
         <p>&copy; {new Date().getFullYear()} Anacaona Transcript Bridge. All rights reserved.</p>
         <div className="mt-2 text-sm">
           <Link to="/terms" className="underline mx-2">Terms of Service</Link>
           <Link to="/privacy" className="underline mx-2">Privacy Policy</Link>
         </div>
-      </footer>
+      </article>
+</footer>
     </div>
   );
 }

@@ -1,17 +1,15 @@
-
 const mongoose = require("mongoose");
 
-const TranscriptSchema = new mongoose.Schema({
+const transcriptSchema = new mongoose.Schema({
+  filename: String,
+  buffer: Buffer, // Or a file path if you store on disk
+  mimetype: String,
   student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  filePath: String,
-  purpose: String,
+  status: { type: String, default: "Pending" },
   needsTranslation: Boolean,
-  status: {
-    type: String,
-    enum: ["Submitted", "Under Review", "Approved", "Rejected", "Translation Requested", "Sent to WES"],
-    default: "Submitted",
-  },
+  language: { type: String, enum: ["french", "spanish", "english"], default: "english" },
+  purpose: { type: String, enum: ["education", "immigration"], required: true },
   submittedAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Transcript", TranscriptSchema);
+module.exports = mongoose.model("Transcript", transcriptSchema);

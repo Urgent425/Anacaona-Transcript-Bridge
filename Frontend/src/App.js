@@ -10,6 +10,7 @@ import ContactPage from "./pages/ContactPage";
 import TermsOfService from "./pages/TermsOfService";
 import StudentDashboard from "./pages/StudentDashboard";
 import SchoolDashboard from "./pages/SchoolDashboard";
+import PublicRoute from "./components/PublicRoute";
 
 
 const App = () => (
@@ -26,6 +27,8 @@ const App = () => (
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/school-dashboard" element={<SchoolDashboard />} />
+        <Route path="/login" element={<PublicRoute><LoginPage /> </PublicRoute>} />
+        <Route path="/register" element={<PublicRoute> <RegisterPage /></PublicRoute>} />
       </Routes>
     </div>
   </Router>
