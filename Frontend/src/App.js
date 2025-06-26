@@ -4,7 +4,6 @@ import Navbar from './components/Navbar';
 import HomePage from "./pages/HomePage";
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import SubmitTranscript from './pages/SubmitTranscript';
 import RegisterPage from './pages/RegisterPage';
 import ContactPage from "./pages/ContactPage";
 import TermsOfService from "./pages/TermsOfService";
@@ -22,7 +21,6 @@ const App = () => (
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/submit-transcript" element={<SubmitTranscript />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />

@@ -18,6 +18,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/transcripts", require("./routes/transcriptRoutes"));
 app.use("/api/schools", require("./routes/schoolRoutes"));
+app.use("/api/transcripts", require("./routes/addDocumentsRoute"));
 
 // Serve frontend
 app.use(express.static(path.join(__dirname, "../frontend/build")));

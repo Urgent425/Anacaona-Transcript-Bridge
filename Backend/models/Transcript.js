@@ -1,14 +1,15 @@
 const mongoose = require("mongoose");
 
 const transcriptSchema = new mongoose.Schema({
+  submissionId: { type: String, required: true },
   filename: String,
-  buffer: Buffer, // Or a file path if you store on disk
+  buffer: Buffer,
   mimetype: String,
   student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   status: { type: String, default: "Pending" },
+  purpose: String,
   needsTranslation: Boolean,
-  language: { type: String, enum: ["french", "spanish", "english"], default: "english" },
-  purpose: { type: String, enum: ["education", "immigration"], required: true },
+  sourceLanguage: String,
   submittedAt: { type: Date, default: Date.now },
 });
 
