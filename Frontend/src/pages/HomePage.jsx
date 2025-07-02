@@ -78,20 +78,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="bg-gray-800 text-white py-6 text-center">
-      <article className="clearfix px-4 max-w-4xl mx-auto text-center">
-        <img
-          className="h-20 w-40 object-contain float-left"
-          src="/img/anacaona.jpg"
-          alt="Anacaona Logo"
-        />
-        <p>&copy; {new Date().getFullYear()} Anacaona Transcript Bridge. All rights reserved.</p>
-        <div className="mt-2 text-sm">
-          <Link to="/terms" className="underline mx-2">Terms of Service</Link>
-          <Link to="/privacy" className="underline mx-2">Privacy Policy</Link>
-        </div>
-      </article>
-</footer>
+      
     </div>
   );
 }

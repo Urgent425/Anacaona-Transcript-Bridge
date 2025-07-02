@@ -6,6 +6,7 @@ const EvaluationSection = () => {
   const [files, setFiles] = useState([]);
   const [translationFlags, setTranslationFlags] = useState([]);
   const [sourceLanguages, setSourceLanguages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
@@ -17,32 +18,49 @@ const EvaluationSection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const submissionId = uuidv4(); // each new evaluation gets its own ID
+    if (files.length === 0) {
+      alert("Please select at least one file.");
+      return;
+    }
+
+    setLoading(true);
+    const submissionId = uuidv4();
     const formData = new FormData();
     formData.append("purpose", purpose);
     formData.append("submissionId", submissionId);
     formData.append("translationFlags", JSON.stringify(translationFlags));
     formData.append("sourceLanguages", JSON.stringify(sourceLanguages));
-
     files.forEach((file) => {
       formData.append("files", file);
     });
 
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5000/api/transcripts/submit", {
+      const res = await fetch("http://localhost:5000/api/transcripts/submit", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      });
-      alert("Evaluation package submitted successfully!");
+      }); 
+      const data = await res.json();
+      if (res.ok) {
+        alert("Evaluation package submitted successfully!");
+        // Clear form
+        setFiles([]);
+        setTranslationFlags([]);
+        setSourceLanguages([]);
+      } else {
+        alert(data.error || "Failed to submit evaluation package.");
+      }
     } catch (error) {
+      console.error(error);
       alert("Failed to submit evaluation package.");
-    }
+    } finally {
+      setLoading(false);
+    } window.location.reload(true);
   };
-
+  
   return (
     <section className="bg-white p-6 rounded shadow-md mb-8">
       <h2 className="text-xl font-bold mb-4">Evaluation Submission</h2>
@@ -70,7 +88,10 @@ const EvaluationSection = () => {
         </label>
 
         {files.map((file, index) => (
-          <div key={index} className="flex flex-col md:flex-row md:items-center md:space-x-4 mt-2 bg-gray-100 p-2 rounded">
+          <div
+            key={index}
+            className="flex flex-col md:flex-row md:items-center md:space-x-4 mt-2 bg-gray-100 p-2 rounded"
+          >
             <span className="font-medium">{file.name}</span>
             <select
               value={translationFlags[index] ? "yes" : "no"}
@@ -103,9 +124,10 @@ const EvaluationSection = () => {
 
         <button
           type="submit"
+          disabled={loading}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Submit Evaluation Package
+          {loading ? "Submitting..." : "Submit Evaluation Package"}
         </button>
       </form>
     </section>
