@@ -60,6 +60,7 @@ const AddDocumentsForm = ({ submissionId }) => {
     } window.location.reload(true);
   };
 
+
   //Handle delete Evalution
 
   const handleRemoveEvaluation = async (submissionId) => {
@@ -147,12 +148,7 @@ const AddDocumentsForm = ({ submissionId }) => {
       </button>
     </form>
     {/* Add Remove button */} 
-                <button
-                  onClick={() => handleRemoveEvaluation(submissionId._id)}
-                  className="mt-2 text-red-600"
-                >
-                  Remove Evaluation
-                </button>
+                
 
     </div>
   );

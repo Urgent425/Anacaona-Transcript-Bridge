@@ -13,12 +13,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/transcripts", require("./routes/transcriptRoutes"));
 app.use("/api/schools", require("./routes/schoolRoutes"));
 app.use("/api/transcripts", require("./routes/addDocumentsRoute"));
+app.use("/api/translation-requests", require("./routes/translationRequestRoutes"));
 
 // Serve frontend
 app.use(express.static(path.join(__dirname, "../frontend/build")));
