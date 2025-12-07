@@ -1,0 +1,23 @@
+{
+  "name": "anacaona-transcript-bridge",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run dev --prefix backend\" \"npm start --prefix frontend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "eslint-plugin-react-hooks": "^7.0.1"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.24",
+    "git-filter-repo": "^0.0.30",
+    "lucide-react": "^0.546.0",
+    "nodemailer": "^7.0.9",
+    "pdfjs-dist": "^5.3.31"
+  }
+}
