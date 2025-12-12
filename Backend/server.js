@@ -55,3 +55,19 @@ app.get(/(.*)/, (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
+const fs = require("fs");
+
+// Serve React build only if it exists (useful for single-server deployments)
+const buildPath = path.join(__dirname, "../Frontend/build");
+
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+} else {
+  // In Vercel + Render setup, frontend is hosted separately (no build folder here)
+  console.log("Frontend build not found. Skipping static file serving.");
+}
