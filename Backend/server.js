@@ -1,17 +1,22 @@
 //Backend/servers.js
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-const path = require("path");
-require("dotenv").config();
+
 const connectDB = require("./config/db");
 connectDB();
 
-app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 
