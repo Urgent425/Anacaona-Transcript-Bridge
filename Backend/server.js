@@ -48,26 +48,22 @@ app.use("/api/admin", require("./routes/admin/institutionAccess"));
 
 
 // Serve frontend
-app.use(express.static(path.join(__dirname, "../frontend/build")));
-
-app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.resolve(__dirname, "../frontend/build/index.html"));
-});
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
 const fs = require("fs");
 
-// Serve React build only if it exists (useful for single-server deployments)
+// Serve frontend build only if it exists (useful for single-server deployments)
 const buildPath = path.join(__dirname, "../Frontend/build");
 
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
-  app.get("*", (req, res) => {
+
+  // Express 5-safe catch-all route
+  app.get("/*", (req, res) => {
     res.sendFile(path.join(buildPath, "index.html"));
   });
 } else {
-  // In Vercel + Render setup, frontend is hosted separately (no build folder here)
   console.log("Frontend build not found. Skipping static file serving.");
 }
+
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
