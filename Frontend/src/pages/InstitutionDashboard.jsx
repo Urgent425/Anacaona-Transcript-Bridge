@@ -163,7 +163,7 @@ function OfficialList({ submissionId }) {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [submissionId]);
 
   if (loading)
@@ -230,7 +230,7 @@ function DetailsDrawer({ open, onClose, submissionId }) {
 
   useEffect(() => {
     loadDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [open, submissionId]);
 
   return (
@@ -485,7 +485,7 @@ export default function InstitutionDashboard() {
 
   useEffect(() => {
     fetchSubmissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [tab, page, pageSize]);
 
   return (

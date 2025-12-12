@@ -62,7 +62,7 @@ export default function SubmissionsPage() {
 
   useEffect(() => {
     fetchSubmissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [navigate]);
 
   // Helpers to read fields safely
