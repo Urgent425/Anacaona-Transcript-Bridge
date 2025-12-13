@@ -33,7 +33,7 @@ const LoginPage = () => {
     try {
       // 1️⃣ Login to get token
       const { data } = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${process.env.REACT_APP_API_URL}/api/auth/login`,
         {
           email,
           password,
@@ -41,7 +41,7 @@ const LoginPage = () => {
       );
 
       // 2️⃣ Fetch user info right after
-      const meRes = await axios.get("http://localhost:5000/api/auth/me", {
+      const meRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${data.token}` },
       });
       const me = meRes.data;

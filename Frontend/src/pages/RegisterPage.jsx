@@ -30,7 +30,7 @@ const RegisterPage = () => {
 
   // Load institutions
   useEffect(() => {
-    fetch("http://localhost:5000/api/institutions")
+    fetch(`${process.env.REACT_APP_API_URL}/api/institutions`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setInstitutions(data);
@@ -56,7 +56,7 @@ const RegisterPage = () => {
     setSubmitting(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
