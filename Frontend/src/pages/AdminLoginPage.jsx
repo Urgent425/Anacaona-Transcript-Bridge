@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
 
     try {
       // 1) Login (use your admin endpoint, or switch to /api/auth/login if unified)
-      const { data } = await axios.post("http://localhost:5000/api/admin/auth/login", {
+      const { data } = await axios.post(`${process.env.REACT_APP_API_URL}/api/admin/auth/login`, {
         email,
         password,
       });
@@ -31,13 +31,13 @@ export default function AdminLoginPage() {
       // 2) Fetch profile (prefer the universal /api/auth/me; fallback to /api/admin/me if you kept separate)
       let me;
       try {
-        const meRes = await axios.get("http://localhost:5000/api/auth/me", {
+        const meRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${data.token}` },
         });
         me = meRes.data;
       } catch (err) {
         // fallback if /api/auth/me isn't available for admins
-        const meRes = await axios.get("http://localhost:5000/api/admin/me", {
+        const meRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/admin/me`, {
           headers: { Authorization: `Bearer ${data.token}` },
         });
         me = meRes.data;
