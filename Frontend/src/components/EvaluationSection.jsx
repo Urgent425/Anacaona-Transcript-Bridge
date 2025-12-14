@@ -47,7 +47,7 @@ export default function EvaluationSection() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/transcripts/submit", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/submit`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -78,7 +78,7 @@ export default function EvaluationSection() {
   // fetch existing submissions
   const fetchSubmissions = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/transcripts/mine", {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/mine`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -99,7 +99,7 @@ export default function EvaluationSection() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/transcripts/${submissionId}/document/${index}`,
+        `${process.env.REACT_APP_API_URL}/api/transcripts/${submissionId}/document/${index}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -123,7 +123,7 @@ export default function EvaluationSection() {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        "http://localhost:5000/api/payments/create-evaluation-checkout-session",
+        `${process.env.REACT_APP_API_URL}/api/payments/create-evaluation-checkout-session`,
         {
           method: "POST",
           headers: {

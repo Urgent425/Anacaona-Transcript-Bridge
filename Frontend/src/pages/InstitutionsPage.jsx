@@ -54,7 +54,7 @@ export default function InstitutionsPage() {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/admin/institutions", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/institutions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to load institutions");
@@ -85,7 +85,7 @@ export default function InstitutionsPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/admin/transcripts?institution=${inst._id}`,
+        `${process.env.REACT_APP_API_URL}/api/admin/transcripts?institution=${inst._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error("Failed to load assignments");
@@ -107,7 +107,7 @@ export default function InstitutionsPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/admin/institutions/${inst._id}/access`,
+        `${process.env.REACT_APP_API_URL}/api/admin/institutions/${inst._id}/access`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error("Failed to load institution access data");
@@ -135,7 +135,7 @@ export default function InstitutionsPage() {
     if (!inviteEmail.trim()) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/admin/institution-invites", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/institution-invites`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ institutionId: accessInst._id, email: inviteEmail.trim() }),
@@ -156,7 +156,7 @@ export default function InstitutionsPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/admin/institution-users/${userId}/activate`,
+        `${process.env.REACT_APP_API_URL}/api/admin/institution-users/${userId}/activate`,
         { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) {
@@ -174,7 +174,7 @@ export default function InstitutionsPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/admin/institution-users/${userId}/suspend`,
+        `${process.env.REACT_APP_API_URL}/api/admin/institution-users/${userId}/suspend`,
         { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) {

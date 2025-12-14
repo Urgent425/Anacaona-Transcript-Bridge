@@ -9,7 +9,7 @@ export default function useAdminPerms() {
     (async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/admin/me", {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

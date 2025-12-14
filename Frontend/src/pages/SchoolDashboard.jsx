@@ -6,7 +6,7 @@ const SchoolDashboard = () => {
   useEffect(() => {
     const fetchAllTranscripts = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/transcripts", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -17,7 +17,7 @@ const SchoolDashboard = () => {
 
   const handleAction = async (id, action) => {
     const token = localStorage.getItem("token");
-    await fetch(`http://localhost:5000/api/transcripts/status/${id}`, {
+    await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/status/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

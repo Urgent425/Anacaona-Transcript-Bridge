@@ -45,7 +45,7 @@ const TranslationUploadForm = ({ onSubmitted }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/translation-requests", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/translation-requests`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

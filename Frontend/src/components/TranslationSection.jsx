@@ -26,7 +26,7 @@ const TranslationSection = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        "http://localhost:5000/api/translation-requests/mine",
+        `${process.env.REACT_APP_API_URL}/api/translation-requests/mine`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error(`Failed to load submissions (${res.status})`);
@@ -46,7 +46,7 @@ const TranslationSection = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/translation-requests/${id}`,
+        `${process.env.REACT_APP_API_URL}/api/translation-requests/${id}`,
         { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error("Delete failed");
@@ -71,7 +71,7 @@ const TranslationSection = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(
-        "http://localhost:5000/api/translation-requests/lock-and-pay",
+        `${process.env.REACT_APP_API_URL}/api/translation-requests/lock-and-pay`,
         {
           method: "POST",
           headers: {

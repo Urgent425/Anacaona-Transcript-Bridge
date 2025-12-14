@@ -37,7 +37,7 @@ export default function AssignAdminModal({
         const token = localStorage.getItem("token"); // 🔐 IMPORTANT
         if (!token) throw new Error("Missing admin token");
 
-        const res = await fetch(`http://localhost:5000/api/admin/users?roles=${encodeURIComponent(roles)}`, {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users?roles=${encodeURIComponent(roles)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -67,8 +67,8 @@ export default function AssignAdminModal({
 
       const path =
         entity === "transcript"
-          ? `http://localhost:5000/api/admin/assignments/transcripts/${entityId}/assign-admin`
-          : `http://localhost:5000/api/admin/assignments/translation-requests/${entityId}/assign-admin`;
+          ? `${process.env.REACT_APP_API_URL}/api/admin/assignments/transcripts/${entityId}/assign-admin`
+          : `${process.env.REACT_APP_API_URL}/api/admin/assignments/translation-requests/${entityId}/assign-admin`;
 
       const res = await fetch(path, {
         method: "PATCH",

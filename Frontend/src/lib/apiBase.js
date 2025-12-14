@@ -9,4 +9,5 @@ const hasImportMeta =
 const fromVite = hasImportMeta ? import.meta.env.VITE_API_URL : undefined;
 const fromCRA  = process.env.REACT_APP_API_URL;
 
-export const API_BASE = (fromVite || fromCRA || "http://localhost:5000").replace(/\/$/, "");
+export const API_BASE_BACKUP = (fromVite || fromCRA || "http://localhost:5000").replace(/\/$/, "");
+export const API_BASE = process.env.REACT_APP_API_URL;

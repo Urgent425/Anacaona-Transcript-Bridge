@@ -24,7 +24,7 @@ export default function InstitutionPicker({
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/institutions");
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/institutions`);
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const data = await res.json();
         setInstitutions(Array.isArray(data) ? data : []);

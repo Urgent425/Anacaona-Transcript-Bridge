@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
       const cached = localStorage.getItem("user");
       if (cached) { setUser(JSON.parse(cached)); return; }
 
-      const res = await fetch("http://localhost:5000/api/auth/me", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (!res.ok) throw new Error("unauthorized");

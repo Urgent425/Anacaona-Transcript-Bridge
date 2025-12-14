@@ -21,7 +21,7 @@ export function AssignInstitutionModal({ submissionId, onAssigned, assignedInsti
     (async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/admin/institutions", {
+        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/institutions`, {
           headers: { "Authorization": `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -39,7 +39,7 @@ export function AssignInstitutionModal({ submissionId, onAssigned, assignedInsti
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/admin/transcripts/${submissionId}/assign`,
+        `${process.env.REACT_APP_API_URL}/api/admin/transcripts/${submissionId}/assign`,
         {
           method: "PATCH",
           headers: {

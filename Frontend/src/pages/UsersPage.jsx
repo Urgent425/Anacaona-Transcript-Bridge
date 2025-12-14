@@ -26,7 +26,7 @@ export default function UsersPage() {
     try {
       // If you want server-side filtering, use ?roles=Translator,Reviewer,SuperAdmin (comma-separated)
       const rolesQuery = roleFilter !== "ALL" ? `?roles=${encodeURIComponent(roleFilter)}` : "";
-      const res = await fetch(`http://localhost:5000/api/admin/users${rolesQuery}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users${rolesQuery}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -60,7 +60,7 @@ export default function UsersPage() {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("http://localhost:5000/api/admin/users", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(form),
@@ -77,7 +77,7 @@ export default function UsersPage() {
   const activate = async (id) => {
     setError("");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}/activate`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${id}/activate`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -93,7 +93,7 @@ export default function UsersPage() {
     if (!window.confirm("Suspend this admin user? They won't be able to log in.")) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}/suspend`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${id}/suspend`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -108,7 +108,7 @@ export default function UsersPage() {
   const changeRole = async (id, role) => {
     setError("");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}/role`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${id}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ role }),
@@ -126,7 +126,7 @@ export default function UsersPage() {
     if (!resetForId) return;
     setError("");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${resetForId}/reset-password`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users/${resetForId}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ tempPassword }),

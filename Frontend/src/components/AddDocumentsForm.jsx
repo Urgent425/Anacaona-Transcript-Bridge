@@ -35,7 +35,7 @@ const AddDocumentsForm = ({ submissionId }) => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-       `http://localhost:5000/api/transcripts/add-to-submission/${submissionId}`,
+       `${process.env.REACT_APP_API_URL}/api/transcripts/add-to-submission/${submissionId}`,
         {
           method: "POST",
           body: formData,
@@ -69,7 +69,7 @@ const AddDocumentsForm = ({ submissionId }) => {
   const handleRemoveEvaluation = async (submissionId) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/transcripts/${submissionId}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/${submissionId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -34,7 +34,7 @@ export default function SubmissionsPage() {
       setErr("");
 
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/admin/transcripts", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/transcripts`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,

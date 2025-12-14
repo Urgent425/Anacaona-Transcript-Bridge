@@ -78,7 +78,7 @@ export default function StudentDashboard() {
           <div>
             <div className="font-medium text-slate-800">Evaluation Submission</div>
             <ul className="list-disc list-inside mt-1 space-y-1">
-              <li>Pick a purpose (Education or Immigration).</li>
+              <li>Pick a purpose (Education, Professional or Immigration).</li>
               <li>Upload multiple documents; mark any that need translation.</li>
               <li>We package and send your files to evaluation partners (e.g., WES).</li>
               <li>Track approval and official uploads from institutions.</li>

@@ -38,7 +38,7 @@ const SubmitTranscript = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:5000/api/transcripts/submit", {
+      await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/submit`, {
         method: "POST",
         body: formData,
         headers: { Authorization: `Bearer ${token}` }

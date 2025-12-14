@@ -20,7 +20,7 @@ export default function SubmissionDetailPage() {
     setErr("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/admin/transcripts/${id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/transcripts/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) return navigate("/admin/login", { replace: true });
@@ -48,7 +48,7 @@ export default function SubmissionDetailPage() {
   const approve = async () => {
     if (!window.confirm("Approve this submission?")) return;
     const token = localStorage.getItem("token");
-    const res = await fetch(`http://localhost:5000/api/admin/transcripts/${id}/approve`, {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/transcripts/${id}/approve`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -60,7 +60,7 @@ export default function SubmissionDetailPage() {
     const reason = window.prompt("Reason for rejection:");
     if (!reason) return;
     const token = localStorage.getItem("token");
-    const res = await fetch(`http://localhost:5000/api/admin/transcripts/${id}/reject`, {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/transcripts/${id}/reject`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

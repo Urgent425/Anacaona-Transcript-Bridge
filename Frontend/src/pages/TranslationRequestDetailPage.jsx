@@ -16,7 +16,7 @@ export default function TranslationRequestDetailPage() {
     setErr("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/admin/translation-requests/${id}`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) return navigate("/admin/login", { replace: true });
@@ -36,7 +36,7 @@ export default function TranslationRequestDetailPage() {
   const updateStatus = async (status) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/admin/translation-requests/${id}/status`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export default function TranslationRequestDetailPage() {
   const toggleLock = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/admin/translation-requests/${id}/lock`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${id}/lock`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -103,7 +103,7 @@ export default function TranslationRequestDetailPage() {
                 <li key={idx}>
                   <a
                     className="text-blue-600 underline"
-                    href={`http://localhost:5000/api/admin/translation-requests/${reqData._id}/files/${idx}`}
+                    href={`${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${reqData._id}/files/${idx}`}
                     target="_blank"
                     rel="noreferrer"
                   >

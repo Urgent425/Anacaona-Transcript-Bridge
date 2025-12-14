@@ -35,7 +35,7 @@ export default function TranslationQueuePage() {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          "http://localhost:5000/api/admin/translations?status=" +
+          `${process.env.REACT_APP_API_URL}/api/admin/translations?status=` +
             encodeURIComponent(statusFilter),
           {
             headers: { Authorization: `Bearer ${token}` },
