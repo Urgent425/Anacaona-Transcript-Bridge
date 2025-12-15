@@ -56,42 +56,61 @@ const TranslationSection = () => {
     }
   };
 
-  const handleProceedToPayment = async () => {
-    if (pending.length === 0) return;
-    if (
-      !window.confirm(
-        `Proceed to payment for ${pending.length} pending submission${
-          pending.length > 1 ? "s" : ""
-        }?`
-      )
-    )
-      return;
+ const handleProceedToPayment = async () => {
+  if (pending.length === 0) return;
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${process.env.REACT_APP_API_URL}/api/translation-requests/lock-and-pay`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ submissionIds: pending.map((s) => s._id) }),
-        }
-      );
-      const data = await res.json();
-      if (!res.ok || !data?.paymentUrl) {
-        throw new Error(data?.message || "Payment initiation failed.");
+  const ok = window.confirm(
+    `Proceed to payment for ${pending.length} pending submission${
+      pending.length > 1 ? "s" : ""
+    }?`
+  );
+  if (!ok) return;
+
+  try {
+    setLoading(true);
+
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${process.env.REACT_APP_API_URL}/api/translation-requests/lock-and-pay`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ submissionIds: pending.map((s) => s._id) }),
       }
-      window.location.href = data.paymentUrl;
-    } catch (err) {
-      alert(err.message || "Payment initiation failed.");
-    } finally {
-      setLoading(false);
+    );
+
+    const data = await res.json();
+    if (!res.ok || !data?.paymentUrl) {
+      throw new Error(data?.message || data?.error || "Payment initiation failed.");
     }
-  };
+
+    // ✅ Open Stripe in a new tab/window (does not replace Anacaona page)
+    const win = window.open(
+      data.paymentUrl,
+      "stripeCheckout",
+      "noopener,noreferrer,width=520,height=720"
+    );
+    // If popup is blocked, fall back to same-tab redirect
+    if (win) {
+      window.location.href = data.paymentUrl;
+      return;
+    }
+
+    // Optional: bring focus to the new tab
+    win.focus?.();
+
+    // Optional: refresh list so UI stays updated after session creation
+    // (Especially useful if backend marks status like "pending_payment")
+    fetchSubmissions();
+  } catch (err) {
+    alert(err.message || "Payment initiation failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">

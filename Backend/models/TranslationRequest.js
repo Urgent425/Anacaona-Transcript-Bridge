@@ -27,6 +27,12 @@ const TranslationRequestSchema = new mongoose.Schema({
   deliveryMethod: String,
   locked:         { type: Boolean, default: false },
   status:         { type: String, enum: ["pending", "locked", "paid", "completed"], default: "pending" },
+    // Payments (Stripe)
+  stripeSessionId:   { type: String, default: null, index: true },
+  paid:              { type: Boolean, default: false },
+  paidAt:            { type: Date, default: null },
+  amountPaidCents:   { type: Number, default: null },
+  currency:          { type: String, default: "usd" },
   createdAt:      { type: Date, default: Date.now },
 
   // ⬇⬇⬇ add these for admin assignment ⬇⬇⬇

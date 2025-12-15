@@ -5,25 +5,44 @@ const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const mongoose = require("mongoose");
 const TranslationRequest = require("../models/TranslationRequest");
+const Stripe = require("stripe");
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-const Stripe = require("stripe");
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+/**
+ * IMPORTANT: Keep these aligned with Frontend/src/components/constants/pricing.js
+ * Values below are EXAMPLES. Replace with your real fees.
+ */
+const TRANSLATION_FEE_PER_PAGE_CENTS = 2500; // $25 / page
+const NOTARY_FEE_CENTS = 1500;              // $15 flat
+const SHIPPING_FEE_CENTS = 1000;            // $10 flat
+
+function requireStudentId(req) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return { error: { code: 401, body: { error: "Unauthorized" } } };
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return { studentId: decoded.id };
+  } catch (e) {
+    return { error: { code: 401, body: { error: "Unauthorized" } } };
+  }
+}
 
 // Create a translation request
 router.post("/", upload.array("files"), async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const studentId = decoded.id;
     const pageCounts = JSON.parse(req.body.pageCounts || "[]");
     const { sourceLanguage, targetLanguage, needNotary, deliveryMethod } = req.body;
-    const submissionId = new mongoose.Types.ObjectId().toString(); // ← ensure this exists
-    
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
@@ -31,78 +50,88 @@ router.post("/", upload.array("files"), async (req, res) => {
     const files = req.files.map((file, index) => ({
       filename: file.originalname,
       mimetype: file.mimetype,
-      buffer: file.buffer,
-      pageCount: pageCounts[index] || 1
+      buffer: file.buffer,          // note: your FileSchema has `path` not `buffer`
+      pageCount: pageCounts[index] || 1,
     }));
 
     const request = new TranslationRequest({
       student: studentId,
       sourceLanguage,
       targetLanguage,
-      needNotary,
+      needNotary: !!needNotary,
       deliveryMethod,
       files,
-      status: "pending", // default status
+      status: "pending",
+      locked: false,
+      paid: false,
     });
 
     await request.save();
-    res.status(201).json({ message: "Translation request created successfully" });
+    return res.status(201).json({ message: "Translation request created successfully" });
   } catch (err) {
     console.error("Error creating translation request:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
 // Get the logged-in user's translation requests
 router.get("/mine", async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const studentId = decoded.id;
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
 
     const requests = await TranslationRequest.find({ student: studentId }).sort({ createdAt: -1 });
-    res.json(requests);
+    return res.json(requests);
   } catch (err) {
     console.error("Error fetching translation requests:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
-// Delete file
+// Delete a translation request
 router.delete("/:id", async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
 
-    const { id: studentId } = jwt.verify(token, process.env.JWT_SECRET);
-
-    const transcript = await TranslationRequest.findById(req.params.id);
-    if (!transcript || transcript.student.toString() !== studentId) {
+    const doc = await TranslationRequest.findById(req.params.id);
+    if (!doc || doc.student.toString() !== studentId) {
       return res.status(403).json({ error: "Forbidden or Not Found" });
     }
 
+    if (doc.locked) {
+      return res.status(400).json({ error: "This submission is locked and cannot be deleted." });
+    }
+
     await TranslationRequest.findByIdAndDelete(req.params.id);
-    res.json({ message: "Transcript deleted" });
+    return res.json({ message: "Submission deleted" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to delete transcript" });
+    return res.status(500).json({ error: "Failed to delete submission" });
   }
 });
 
+/**
+ * Lock pending translation requests and create a Stripe Checkout Session.
+ * Charges:
+ * - Translation per page
+ * - + Notary fee if any pending request has needNotary = true
+ * - + Shipping fee if any pending request deliveryMethod is "hard copy" or "both"
+ */
 router.post("/lock-and-pay", async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-    const { id: studentId } = jwt.verify(token, process.env.JWT_SECRET);
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
 
     const { submissionIds } = req.body;
-    if (!submissionIds || !Array.isArray(submissionIds) || submissionIds.length === 0) {
+
+    if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
       return res.status(400).json({ error: "No submissions provided" });
     }
 
-    // Find unlocked submissions
     const submissions = await TranslationRequest.find({
       _id: { $in: submissionIds },
       student: studentId,
@@ -113,46 +142,86 @@ router.post("/lock-and-pay", async (req, res) => {
       return res.status(400).json({ error: "No unlocked submissions found." });
     }
 
-    const totalPages = submissions.reduce(
-      (sum, s) =>
-        sum + (s.files ? s.files.reduce((fileSum, f) => fileSum + (f.pageCount || 1), 0) : 0),
-      0
+    const totalPages = submissions.reduce((sum, s) => {
+      const pages = (s.files || []).reduce((fileSum, f) => fileSum + (f.pageCount || 1), 0);
+      return sum + pages;
+    }, 0);
+
+    if (totalPages <= 0) {
+      return res.status(400).json({ error: "No pages found to bill." });
+    }
+
+    const hasNotary = submissions.some((s) => !!s.needNotary);
+    const needsShipping = submissions.some(
+      (s) => s.deliveryMethod === "hard copy" || s.deliveryMethod === "both"
     );
 
-    const totalAmount = totalPages * 1000; // $10 per page in cents
+    // Stripe line items
+    const line_items = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Translation Services (per page)" },
+          unit_amount: TRANSLATION_FEE_PER_PAGE_CENTS,
+        },
+        quantity: totalPages,
+      },
+    ];
 
-    // Create Stripe Checkout session
+    if (hasNotary) {
+      line_items.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Notary Fee" },
+          unit_amount: NOTARY_FEE_CENTS,
+        },
+        quantity: 1,
+      });
+    }
+
+    if (needsShipping) {
+      line_items.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Shipping Fee" },
+          unit_amount: SHIPPING_FEE_CENTS,
+        },
+        quantity: 1,
+      });
+    }
+
+    const grandTotalCents =
+      totalPages * TRANSLATION_FEE_PER_PAGE_CENTS +
+      (hasNotary ? NOTARY_FEE_CENTS : 0) +
+      (needsShipping ? SHIPPING_FEE_CENTS : 0);
+
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: "Translation Services" },
-            unit_amount: totalAmount,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items,
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/payment-success`,
+      success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/dashboard`,
       metadata: {
-        studentId,
+        type: "translation_only",
+        studentId: String(studentId),
         submissionIds: submissionIds.join(","),
+        totalPages: String(totalPages),
+        hasNotary: String(hasNotary),
+        needsShipping: String(needsShipping),
+        grandTotalCents: String(grandTotalCents),
       },
     });
 
-    // Lock the submissions
+    // Lock submissions and store session id for reconciliation
     await TranslationRequest.updateMany(
-      { _id: { $in: submissionIds } },
-      { $set: { locked: true, status: "locked" } }
+      { _id: { $in: submissionIds }, student: studentId, locked: false },
+      { $set: { stripeSessionId: session.id, status: "pending" } }
     );
-
-    res.json({ paymentUrl: session.url });
+    return res.json({ paymentUrl: session.url });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error initiating payment" });
+    return res.status(500).json({ error: "Server error initiating payment" });
   }
 });
 

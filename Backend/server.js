@@ -18,6 +18,9 @@ app.use(
   })
 );
 
+
+// ✅ Stripe webhook MUST be mounted before express.json()
+app.use("/api/stripe", require("./routes/stripeWebhook"));
 app.use(express.json());
 
 // Routes
@@ -27,7 +30,6 @@ app.use("/api/institution", require("./routes/institutionRoutes"));
 app.use("/api/institutions", require("./routes/institutions"));
 app.use("/api/transcripts", require("./routes/addDocumentsRoute"));
 app.use("/api/translation-requests", require("./routes/translationRequestRoutes"));
-app.use("/api/stripe", require("./routes/stripeWebhook"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/webhooks", require("./routes/webhookRoutes"));
 app.use("/api/admin/transcripts",   require("./routes/admin/transcripts"));
