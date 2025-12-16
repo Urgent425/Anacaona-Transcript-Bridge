@@ -32,6 +32,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminOfficialFiles from "./pages/AdminOfficialFiles";
 import TranslationQueuePage from "./pages/TranslationQueuePage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 /** ---------- auth helpers (replace with your real auth) ---------- */
 const getAuth = () => {
@@ -116,6 +117,7 @@ export default function App() {
         </Route>
 
         {/* ---------- Public area (no auth needed) ---------- */}
+        <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route index element={<HomePage />} />
         <Route element={<PublicLayout />}>
           
@@ -151,7 +153,7 @@ export default function App() {
         >
           {/* Generic user dashboard if you have it */}
           <Route path="/dashboard" element={<Dashboard />} />
-
+  
           {/* Role-specific dashboards */}
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/institution-dashboard" element={<InstitutionDashboard />} />

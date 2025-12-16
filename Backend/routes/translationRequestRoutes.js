@@ -225,4 +225,35 @@ router.post("/lock-and-pay", async (req, res) => {
   }
 });
 
+// backend/routes/translationRequestRoutes.js (add near bottom)
+router.get("/receipt/:sessionId", async (req, res) => {
+  try {
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
+
+    const { sessionId } = req.params;
+
+    const doc = await TranslationRequest.findOne({
+      student: studentId,
+      stripeSessionId: sessionId,
+    }).select("receiptUrl paid locked status amountPaidCents currency");
+
+    if (!doc) return res.status(404).json({ message: "Receipt not found." });
+
+    // Webhook must have marked it paid and stored receiptUrl
+    return res.json({
+      receiptUrl: doc.receiptUrl || null,
+      paid: !!doc.paid || doc.status === "paid" || !!doc.locked,
+      amountPaidCents: doc.amountPaidCents,
+      currency: doc.currency,
+      status: doc.status,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 module.exports = router;
