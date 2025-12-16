@@ -29,6 +29,11 @@ const TranslationRequestSchema = new mongoose.Schema({
   status:         { type: String, enum: ["pending", "locked", "paid", "completed"], default: "pending" },
     // Payments (Stripe)
   stripeSessionId:   { type: String, default: null, index: true },
+  stripePaymentIntentId: { type: String, default: null },
+  stripeChargeId:    { type: String, default: null },
+  receiptUrl:        { type: String, default: null },
+  stripeInvoiceId: { type: String, default: null }, // only if using Stripe invoices
+  invoicePdfUrl:   { type: String, default: null }, // for Stripe invoice PDF or your own PDF
   paid:              { type: Boolean, default: false },
   paidAt:            { type: Date, default: null },
   amountPaidCents:   { type: Number, default: null },

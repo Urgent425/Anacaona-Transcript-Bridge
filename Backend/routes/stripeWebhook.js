@@ -5,9 +5,7 @@ const bodyParser = require("body-parser");
 const TranslationRequest = require("../models/TranslationRequest");
 
 const router = express.Router();
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 router.post(
   "/webhook",
@@ -17,9 +15,13 @@ router.post(
     let event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
     } catch (err) {
-      console.error("Stripe webhook signature verification failed:", err.message);
+      console.error("Webhook signature verification failed:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -27,33 +29,46 @@ router.post(
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
 
-        const submissionIdsRaw = session?.metadata?.submissionIds || "";
-        const submissionIds = submissionIdsRaw
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        // Expand to get payment_intent + charges (for receipt_url)
+        const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+          expand: ["payment_intent", "payment_intent.latest_charge"],
+        });
 
-        if (submissionIds.length === 0) {
-          console.warn("checkout.session.completed without submissionIds metadata. session:", session?.id);
-          return res.json({ received: true });
-        }
+        const pi = fullSession.payment_intent;
+        const latestCharge = pi?.latest_charge;
 
-        // Stripe Checkout session fields:
-        // - amount_total is total charged in cents
-        // - currency is lowercase (e.g., "usd")
-        const amountPaidCents = typeof session.amount_total === "number" ? session.amount_total : null;
-        const currency = session.currency || "usd";
+        const amountPaidCents =
+          typeof fullSession.amount_total === "number" ? fullSession.amount_total : null;
 
-       await TranslationRequest.updateMany(
-        { _id: { $in: submissionIds } },
-        { $set: { status: "paid", locked: true, paid: true, paidAt: new Date(), stripeSessionId: session.id } }
-      );
+        const currency = fullSession.currency || "usd";
+        const receiptUrl = latestCharge?.receipt_url || null;
 
+        // Update by stripeSessionId (most reliable)
+        await TranslationRequest.updateMany(
+          { stripeSessionId: session.id },
+          {
+            $set: {
+              paid: true,
+              paidAt: new Date(),
+              status: "paid",
+              locked: true,
+
+              amountPaidCents,
+              currency,
+
+              stripePaymentIntentId: pi?.id || null,
+              stripeChargeId: latestCharge?.id || null,
+              receiptUrl,
+            },
+          }
+        );
+
+        console.log("✅ Translation requests marked paid+locked for session:", session.id);
       }
 
       return res.json({ received: true });
     } catch (err) {
-      console.error("Webhook handler error:", err);
+      console.error("Webhook handler failed:", err);
       return res.status(500).json({ error: "Webhook handler failed" });
     }
   }
