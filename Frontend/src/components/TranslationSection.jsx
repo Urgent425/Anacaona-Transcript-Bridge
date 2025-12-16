@@ -93,11 +93,12 @@ const TranslationSection = () => {
       "stripeCheckout",
       "noopener,noreferrer,width=520,height=720"
     );
-    // If popup is blocked, fall back to same-tab redirect
-    if (win) {
-      window.location.href = data.paymentUrl;
-      return;
+    // ✅ If popup is BLOCKED, fall back to same-tab redirect
+    if (!win) {
+       window.location.href = data.paymentUrl;
+       return;
     }
+
 
     // Optional: bring focus to the new tab
     win.focus?.();
