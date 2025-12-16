@@ -101,7 +101,7 @@ const TranslationSection = () => {
 
 
     // Optional: bring focus to the new tab
-    win.focus?.();
+   
 
     // Optional: refresh list so UI stays updated after session creation
     // (Especially useful if backend marks status like "pending_payment")
