@@ -94,7 +94,7 @@ const TranslationSection = () => {
       "noopener,noreferrer,width=520,height=720"
     );
     // ✅ If popup is BLOCKED, fall back to same-tab redirect
-    if (!win) {
+    if (win) {
        window.location.href = data.paymentUrl;
        return;
     }

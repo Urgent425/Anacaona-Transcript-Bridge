@@ -44,20 +44,11 @@ router.post(
         const amountPaidCents = typeof session.amount_total === "number" ? session.amount_total : null;
         const currency = session.currency || "usd";
 
-        await TranslationRequest.updateMany(
-          { _id: { $in: submissionIds } },
-          {
-            $set: {
-              status: "paid",
-              paid: true,
-              paidAt: new Date(),
-              stripeSessionId: session.id,
-              amountPaidCents,
-              currency,
-              locked: true,
-            },
-          }
-        );
+       await TranslationRequest.updateMany(
+        { _id: { $in: submissionIds } },
+        { $set: { status: "paid", locked: true, paid: true, paidAt: new Date(), stripeSessionId: session.id } }
+      );
+
       }
 
       return res.json({ received: true });
