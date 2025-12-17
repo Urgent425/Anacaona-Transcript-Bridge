@@ -33,6 +33,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminOfficialFiles from "./pages/AdminOfficialFiles";
 import TranslationQueuePage from "./pages/TranslationQueuePage";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentSuccessEval from "./pages/PaymentSuccessEval";
 
 /** ---------- auth helpers (replace with your real auth) ---------- */
 const getAuth = () => {
@@ -118,6 +119,7 @@ export default function App() {
 
         {/* ---------- Public area (no auth needed) ---------- */}
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/payment-success-eval" element={<PaymentSuccessEval />} />
         <Route index element={<HomePage />} />
         <Route element={<PublicLayout />}>
           

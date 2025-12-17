@@ -48,6 +48,14 @@ const transcriptSchema = new mongoose.Schema({
   purpose:               { type: String, enum: ["education", "immigration"] },
   approvalStatus:        { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   finalStatus:           { type: String, enum: ["awaiting_shipping", "in_transit", "completed"], default: "awaiting_shipping" },
+  stripeSessionId:        { type: String, default: null },
+  stripePaymentIntentId:  { type: String, default: null },
+  stripeChargeId:         { type: String, default: null },
+  receiptUrl:             { type: String, default: null },
+  paidAt:                 { type: Date, default: null },
+  amountPaidCents:        { type: Number, default: null },
+  currency:               { type: String, default: "usd" },
+  locked:                 { type: Boolean, default: false }, // optional but recommended
   paymentStatus:         { type: String, enum: ["pending", "paid"], default: "pending" },
   sealedPackageReceived: { type: Boolean, default: false },
   shippingTrackingNumber:{ type: String },
@@ -62,6 +70,11 @@ const transcriptSchema = new mongoose.Schema({
       needsTranslation:Boolean,
       sourceLanguage:  String,
       pageCount:       Number,
+      // NEW (important)
+      translationPaid: { type: Boolean, default: false },
+      translationPaidAt: { type: Date, default: null },
+      translationStripeSessionId: { type: String, default: null },
+      addedAt: { type: Date, default: Date.now },
     }
   ],
 

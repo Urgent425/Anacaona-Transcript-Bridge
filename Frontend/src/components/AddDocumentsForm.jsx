@@ -1,104 +1,119 @@
 
-//component/AddDocumentsForm
+// src/components/AddDocumentsForm.jsx
+import React, { useMemo, useState } from "react";
 
-import React, { useState } from "react";
-
-const AddDocumentsForm = ({ submissionId }) => {
+export default function AddDocumentsForm({
+  submissionId,
+  disabled = false,
+  onUploaded,
+}) {
   const [files, setFiles] = useState([]);
-  const [translationFlags, setTranslationFlags] = useState([]);
-  const [sourceLanguages, setSourceLanguages] = useState([]);
+  const [translationFlags, setTranslationFlags] = useState([]); // "yes" | "no"
+  const [sourceLanguages, setSourceLanguages] = useState([]);   // "french" | "spanish"
+  const [uploading, setUploading] = useState(false);
+
+  const canSubmit = useMemo(() => {
+    return !disabled && !uploading && files.length > 0;
+  }, [disabled, uploading, files.length]);
 
   const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files);
+    const selected = Array.from(e.target.files || []);
     setFiles(selected);
-    // Initialize flags & languages arrays
-    setTranslationFlags(new Array(selected.length).fill(false));
-    setSourceLanguages(new Array(selected.length).fill("french"));
+
+    // Backend expects yes/no strings
+    setTranslationFlags(selected.map(() => "no"));
+    setSourceLanguages(selected.map(() => "french"));
+  };
+
+  const updateTranslationFlag = (idx, value) => {
+    // value is "yes" | "no"
+    setTranslationFlags((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
+
+    // If switching to "no", reset language (keeps payload clean)
+    if (value === "no") {
+      setSourceLanguages((prev) => {
+        const next = [...prev];
+        next[idx] = "french";
+        return next;
+      });
+    } else {
+      // If switching to "yes", ensure there is a language value at idx
+      setSourceLanguages((prev) => {
+        const next = [...prev];
+        next[idx] = next[idx] || "french";
+        return next;
+      });
+    }
+  };
+
+  const updateLanguage = (idx, value) => {
+    setSourceLanguages((prev) => {
+      const next = [...prev];
+      next[idx] = value;
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (files.length === 0) {
-      alert("Please select at least one file.");
-      return;
-    }
-
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-    formData.append("translationFlags", JSON.stringify(
-  translationFlags.map(flag => flag ? "yes" : "no")
-));
-    formData.append("sourceLanguages", JSON.stringify(sourceLanguages));
+    if (!canSubmit) return;
 
     try {
+      setUploading(true);
+
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      formData.append("translationFlags", JSON.stringify(translationFlags));
+      formData.append("sourceLanguages", JSON.stringify(sourceLanguages));
+
       const token = localStorage.getItem("token");
       const res = await fetch(
-       `${process.env.REACT_APP_API_URL}/api/transcripts/add-to-submission/${submissionId}`,
+        `${process.env.REACT_APP_API_URL}/api/transcripts/add-to-submission/${submissionId}`,
         {
           method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
           body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
       );
 
       const data = await res.json();
-      if (res.ok) {
-        
-        alert("Documents added successfully!");
-        
-        // Reset state
-        setFiles([]);
-        setTranslationFlags([]);
-        setSourceLanguages([]);
-      } else {
-        alert(data.error || "Upload failed.");
+      if (!res.ok) throw new Error(data?.error || "Upload failed.");
+
+      alert("Documents added successfully!");
+
+      // Reset form
+      setFiles([]);
+      setTranslationFlags([]);
+      setSourceLanguages([]);
+
+      // Refresh parent list
+      if (typeof onUploaded === "function") {
+        await onUploaded();
       }
     } catch (err) {
       console.error(err);
-      alert("Upload failed.");
-    } window.location.reload(true);
-  };
-
-
-  //Handle delete Evaluation
-
-  const handleRemoveEvaluation = async (submissionId) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/transcripts/${submissionId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (res.ok) {
-        alert("Evaluation removed successfully!");
-        // After removal, fetch the updated submissions list
-        await fetchSubmissions();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to remove evaluation.");
-      }
-    } catch (err) {
-      console.error("Error removing evaluation:", err);
-      alert("Failed to remove evaluation.");
-    } window.location.reload(true);
+      alert(err.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
-    <div> 
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded shadow-md mt-4"
-    >
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md mt-4">
       <h3 className="text-lg font-semibold mb-4">
         Add Documents to Submission #{submissionId}
       </h3>
+
+      {disabled && (
+        <div className="mb-3 rounded-md bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+          Uploads are currently disabled for this submission.
+        </div>
+      )}
 
       <input
         type="file"
@@ -106,36 +121,29 @@ const AddDocumentsForm = ({ submissionId }) => {
         accept=".pdf,image/*"
         onChange={handleFileChange}
         className="mb-4 block w-full"
+        disabled={disabled || uploading}
       />
 
       {files.map((file, idx) => (
-        <div key={file.name} className="mb-3">
-          <label className="block font-medium">{file.name}</label>
+        <div key={`${file.name}-${idx}`} className="mb-3">
+          <label className="block font-medium break-all">{file.name}</label>
+
           <select
-            value={translationFlags[idx] ? "yes" : "no"}
-            onChange={(e) =>
-              setTranslationFlags((prev) => {
-                const updated = [...prev];
-                updated[idx] = e.target.value === "yes";
-                return updated;
-              })
-            }
+            value={translationFlags[idx] || "no"}
+            onChange={(e) => updateTranslationFlag(idx, e.target.value)}
             className="border p-2 rounded w-full mt-1"
+            disabled={disabled || uploading}
           >
             <option value="no">Needs Translation: No</option>
             <option value="yes">Needs Translation: Yes</option>
           </select>
-          {translationFlags[idx] && (
+
+          {translationFlags[idx] === "yes" && (
             <select
-              value={sourceLanguages[idx]}
-              onChange={(e) =>
-                setSourceLanguages((prev) => {
-                  const updated = [...prev];
-                  updated[idx] = e.target.value;
-                  return updated;
-                })
-              }
+              value={sourceLanguages[idx] || "french"}
+              onChange={(e) => updateLanguage(idx, e.target.value)}
               className="border p-2 rounded w-full mt-1"
+              disabled={disabled || uploading}
             >
               <option value="french">French</option>
               <option value="spanish">Spanish</option>
@@ -146,16 +154,18 @@ const AddDocumentsForm = ({ submissionId }) => {
 
       <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        disabled={!canSubmit}
+        className={`px-4 py-2 rounded text-white ${
+          canSubmit ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+        }`}
       >
-        Upload Documents
+        {uploading ? "Uploading..." : "Upload Documents"}
       </button>
+
+      <p className="text-xs text-gray-500 mt-2">
+        You can add documents even after payment. If new documents require translation,
+        you’ll pay only for the new pages.
+      </p>
     </form>
-    {/* Add Remove button */} 
-                
-
-    </div>
   );
-};
-
-export default AddDocumentsForm;
+}
