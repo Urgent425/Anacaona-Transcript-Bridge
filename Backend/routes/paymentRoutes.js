@@ -46,11 +46,14 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
 
     const docs = Array.isArray(submission.documents) ? submission.documents : [];
 
-    // Count ONLY pages that need translation
-    const translationPages = docs.reduce((sum, doc) => {
-      if (!doc?.needsTranslation) return sum;
-      return sum + (Number(doc.pageCount) || 1);
+    // Count ONLY pages that need translation AND are not already paid
+    const unpaidTranslationDocs = docs.filter(d => d?.needsTranslation && !d?.translationPaid);
+
+    const translationPages = unpaidTranslationDocs.reduce((sum, d) => {
+      return sum + (Number(d.pageCount) || 1);
     }, 0);
+
+  const translationDocIds = unpaidTranslationDocs.map(d => String(d._id));
 
     const line_items = [
       {
@@ -91,6 +94,7 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
         transcriptMongoId: String(submission._id),
         studentId: String(studentId),
         translationPages: String(translationPages),
+        translationDocIds: translationDocIds.join(","),
       },
     });
 

@@ -45,14 +45,41 @@ router.post("/stripe", express.raw({ type: "application/json" }), async (req, re
         currency: (fullSession.currency || "usd").toLowerCase(),
       };
 
-      const result = await Transcript.updateOne(
-        { stripeSessionId: fullSession.id }, // ✅ most reliable selector
-        { $set: update }
-      );
+      // ✅ doc ids billed for translation in this checkout session
+      const translationDocIds = (fullSession?.metadata?.translationDocIds || "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      let result;
+
+      if (translationDocIds.length > 0) {
+        result = await Transcript.updateOne(
+          { stripeSessionId: fullSession.id },
+          {
+            $set: {
+              ...update,
+
+              // ✅ mark only the billed docs as translation-paid
+              "documents.$[doc].translationPaid": true,
+              "documents.$[doc].translationPaidAt": new Date(),
+              "documents.$[doc].translationStripeSessionId": fullSession.id,
+            },
+          },
+          {
+            arrayFilters: [{ "doc._id": { $in: translationDocIds } }],
+          }
+        );
+      } else {
+        // No translation docs billed in this payment — keep original behavior
+        result = await Transcript.updateOne(
+          { stripeSessionId: fullSession.id },
+          { $set: update }
+        );
+      }
 
       console.log("✅ Eval webhook update result:", result, "session:", fullSession.id);
 
-      // Optional: if no document matched, log metadata for debugging
       if (!result.matchedCount) {
         console.warn("⚠️ No Transcript matched stripeSessionId:", fullSession.id, "metadata:", fullSession.metadata);
       }
