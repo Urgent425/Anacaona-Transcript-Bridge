@@ -51,24 +51,22 @@ export default function EvaluationSection() {
 
   useEffect(() => {
     fetchSubmissions();
-    
+   
   }, []);
 
-  // ---------------------------
-  // File selection (new package)
-  // ---------------------------
+  const hasUnpaidTranslation = (submission) => {
+    return (submission.documents || []).some(
+      (d) => d.needsTranslation && !d.translationPaid
+    );
+  };
+
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files || []);
     setFiles(selectedFiles);
-
-    // default choices per file
     setTranslationFlags(selectedFiles.map(() => false));
     setSourceLanguages(selectedFiles.map(() => "french"));
   };
 
-  // ---------------------------
-  // Submit a new evaluation package
-  // ---------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canSubmit) return;
@@ -79,19 +77,14 @@ export default function EvaluationSection() {
     const formData = new FormData();
     formData.append("submissionMethod", submissionMethod);
     formData.append("purpose", purpose);
-
-    // Optional: send destination fields if your backend supports them
     formData.append("requestedInstitutionId", requestedInstitutionId || "");
     formData.append("requestedInstitutionName", requestedInstitutionName || "");
-
     formData.append("translationFlags", JSON.stringify(translationFlags));
     formData.append("sourceLanguages", JSON.stringify(sourceLanguages));
-
     files.forEach((file) => formData.append("files", file));
 
     try {
       const token = localStorage.getItem("token");
-
       const res = await fetch(`${apiBase}/api/transcripts/submit`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -101,7 +94,6 @@ export default function EvaluationSection() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to submit evaluation package.");
 
-      // reset draft
       setFiles([]);
       setTranslationFlags([]);
       setSourceLanguages([]);
@@ -116,69 +108,61 @@ export default function EvaluationSection() {
     }
   };
 
-  // ---------------------------
-  // Delete a document
-  // Rule:
-  // - If system hard-locked: no edits
-  // - If paid: no deletes (but uploads allowed)
-  // ---------------------------
-  const handleDeleteFile = async (submission, index) => {
-    const isPaid = submission?.paymentStatus === "paid";
-    const hardLocked = !!submission?.locked;
+  // After payment: allow deletes ONLY for docs that are NOT translationPaid.
+// If doc.translationPaid === true => cannot delete (already paid translation).
+const handleDeleteFile = async (submission, index) => {
+  const doc = submission?.documents?.[index];
 
-    if (hardLocked) {
-      alert("This submission is locked by the system. Please contact support.");
-      return;
-    }
-    if (isPaid) {
-      alert("This evaluation is already paid. Documents cannot be deleted, but you can add new documents if requested.");
-      return;
-    }
+  // If translation was already paid for this document, block deletion
+  if (doc?.translationPaid === true) {
+    alert("This document’s translation has already been paid, so it cannot be deleted.");
+    return;
+  }
 
-    const confirmDelete = window.confirm("Are you sure you want to delete this file?");
-    if (!confirmDelete) return;
+  const confirmDelete = window.confirm("Are you sure you want to delete this file?");
+  if (!confirmDelete) return;
 
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${apiBase}/api/transcripts/${submission.submissionId}/document/${index}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${apiBase}/api/transcripts/${submission.submissionId}/document/${index}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Failed to delete document.");
+
+    alert(data?.message || "Document removed.");
+    await fetchSubmissions();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Failed to delete document.");
+  }
+};
+
+  const openPopup = (name) => {
+    if (!checkoutPopupRef.current || checkoutPopupRef.current.closed) {
+      checkoutPopupRef.current = window.open(
+        "about:blank",
+        name,
+        "popup,width=520,height=720"
       );
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to delete document.");
-
-      alert(data?.message || "Document removed.");
-      await fetchSubmissions();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || "Failed to delete document.");
     }
+    return checkoutPopupRef.current;
   };
 
-  // ---------------------------
-  // Stripe checkout (popup)
-  // ---------------------------
   const handleProceedToPayment = async (submission) => {
     const isPaid = submission?.paymentStatus === "paid";
-    const token = localStorage.getItem("token");
-
     if (isPaid) {
       alert("This submission is already paid.");
       return;
     }
 
-    // open popup once (or reuse existing)
-    if (!checkoutPopupRef.current || checkoutPopupRef.current.closed) {
-      checkoutPopupRef.current = window.open(
-        "about:blank",
-        "anacaona_eval_checkout",
-        "popup,width=520,height=720"
-      );
-    }
+    const token = localStorage.getItem("token");
+    const popup = openPopup("anacaona_eval_checkout");
 
     try {
       const res = await fetch(`${apiBase}/api/payments/create-evaluation-checkout-session`, {
@@ -191,17 +175,38 @@ export default function EvaluationSection() {
       });
 
       const data = await res.json();
-      if (!res.ok || !data?.url) {
-        throw new Error(data?.error || "Failed to create payment session.");
-      }
+      if (!res.ok || !data?.url) throw new Error(data?.error || "Failed to create payment session.");
 
-      checkoutPopupRef.current.location.href = data.url;
+      popup.location.href = data.url;
     } catch (err) {
       console.error(err);
-      if (checkoutPopupRef.current && !checkoutPopupRef.current.closed) {
-        checkoutPopupRef.current.close();
-      }
+      popup?.close();
       alert(err.message || "Failed to create payment session.");
+    }
+  };
+
+  const handlePayAdditionalTranslation = async (submissionId) => {
+    const token = localStorage.getItem("token");
+    const popup = openPopup("anacaona_eval_checkout");
+
+    try {
+      const res = await fetch(`${apiBase}/api/payments/create-additional-translation-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ submissionId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.url) throw new Error(data?.error || "Failed to create translation checkout.");
+
+      popup.location.href = data.url;
+    } catch (err) {
+      console.error(err);
+      popup?.close();
+      alert(err.message || "Failed to start translation payment.");
     }
   };
 
@@ -224,7 +229,6 @@ export default function EvaluationSection() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Submission Method */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Submission Method
@@ -240,13 +244,8 @@ export default function EvaluationSection() {
                 <option value="sealed">Sealed package from my school</option>
                 <option value="digital">Digital approval by my school or MENFP</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                “Sealed package” means the school gives you an official sealed envelope.
-                “Digital” means the school or MENFP will confirm electronically.
-              </p>
             </div>
 
-            {/* Purpose */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Purpose of Evaluation
@@ -262,7 +261,6 @@ export default function EvaluationSection() {
             </div>
           </div>
 
-          {/* Institution Picker */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Where should we send the result?
@@ -275,26 +273,21 @@ export default function EvaluationSection() {
                 setRequestedInstitutionName(name);
               }}
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Example: WES, a university, or an immigration office.
-            </p>
           </div>
 
-          {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Upload Your Documents
             </label>
-            <p className="text-xs text-gray-500 mb-2 leading-snug">
-              Accepted formats: PDF and images (JPG/PNG). You can mark which files need translation.
-            </p>
 
             <input
               type="file"
               multiple
               accept=".pdf,image/*"
               onChange={handleFileChange}
-              className="block w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg cursor-pointer file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full text-sm text-gray-700 bg-white border border-gray-300 rounded-lg cursor-pointer
+                         file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700
+                         hover:file:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
 
             {files.length > 0 && (
@@ -318,7 +311,6 @@ export default function EvaluationSection() {
                             updated[index] = e.target.value === "yes";
                             setTranslationFlags(updated);
 
-                            // keep a default language; only used if translation = yes
                             if (e.target.value !== "yes") {
                               const updatedLangs = [...sourceLanguages];
                               updatedLangs[index] = "french";
@@ -356,7 +348,6 @@ export default function EvaluationSection() {
             )}
           </div>
 
-          {/* Submit button */}
           <div className="pt-2">
             <button
               type="submit"
@@ -366,10 +357,6 @@ export default function EvaluationSection() {
             >
               {loading ? "Submitting..." : "Submit New Package"}
             </button>
-
-            <p className="text-xs text-gray-500 mt-2 leading-snug">
-              After submission, you can add supporting pages below. After payment, deletes are disabled, but uploads remain allowed unless system-locked.
-            </p>
           </div>
         </form>
       </section>
@@ -378,14 +365,11 @@ export default function EvaluationSection() {
       <section className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
         <header className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900 flex items-start gap-2">
-              <span>Your Submissions</span>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-300">
-                Step 2: Review & Pay
-              </span>
+            <h3 className="text-xl font-semibold text-gray-900">
+              Your Submissions
             </h3>
             <p className="text-sm text-gray-600 leading-snug mt-1">
-              Each package is separate. After payment, you can still upload additional requested documents.
+              After payment, deletes are disabled, but uploads remain allowed.
             </p>
           </div>
 
@@ -414,15 +398,13 @@ export default function EvaluationSection() {
           <div className="space-y-8">
             {submissions.map((submission) => {
               const isPaid = submission.paymentStatus === "paid";
-              const hardLocked = !!submission.locked; // system lock only
-              const preventDelete = isPaid || hardLocked;
+              const preventDelete = isPaid;
 
               return (
                 <div
                   key={submission._id}
                   className="rounded-xl border border-gray-200 bg-gray-50/50 p-4"
                 >
-                  {/* Top row */}
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
                     <div>
                       <div className="text-sm text-gray-500">Submission ID</div>
@@ -449,47 +431,9 @@ export default function EvaluationSection() {
                       <span className="px-2 py-1 rounded-full border border-gray-300 bg-white text-gray-700 font-medium">
                         {submission.submissionMethod === "sealed" ? "Sealed Package" : "Digital"}
                       </span>
-
-                      {hardLocked && (
-                        <span className="px-2 py-1 rounded-full border border-gray-300 bg-white text-gray-700 font-medium">
-                          Locked (System)
-                        </span>
-                      )}
                     </div>
                   </div>
 
-                  {/* Meta */}
-                  <div className="grid sm:grid-cols-2 gap-4 mt-4 text-sm text-gray-700">
-                    <div className="space-y-1">
-                      <p>
-                        <span className="font-medium text-gray-900">Approval Status:</span>{" "}
-                        {submission.approvalStatus || "—"}
-                      </p>
-                      <p>
-                        <span className="font-medium text-gray-900">Final Status:</span>{" "}
-                        {submission.finalStatus || "—"}
-                      </p>
-                      <p>
-                        <span className="font-medium text-gray-900">Created:</span>{" "}
-                        {new Date(submission.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    {submission.submissionMethod === "sealed" && (
-                      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 leading-snug">
-                        <p className="text-yellow-800 font-semibold text-sm">
-                          Sealed Package Instructions
-                        </p>
-                        <ul className="list-disc ml-4 text-[13px] text-yellow-800">
-                          <li>Get the official sealed envelope from your school or MENFP.</li>
-                          <li>Ship it to Anacaona Transcript Bridge or directly to the destination (ex: WES).</li>
-                          <li>Write your Submission ID on the envelope or cover letter.</li>
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Documents */}
                   <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
                     <table className="w-full text-sm text-gray-700">
                       <thead className="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-200">
@@ -497,68 +441,88 @@ export default function EvaluationSection() {
                           <th className="text-left px-3 py-2 font-medium">Filename</th>
                           <th className="text-left px-3 py-2 font-medium">Pages</th>
                           <th className="text-left px-3 py-2 font-medium">Needs Translation</th>
-                          <th className="text-left px-3 py-2 font-medium">Added On</th>
                           <th className="px-3 py-2" />
                         </tr>
                       </thead>
                       <tbody>
-                        {(submission.documents || []).map((doc, idx) => (
-                          <tr key={idx} className="border-b border-gray-100 last:border-b-0">
-                            <td className="px-3 py-2 break-all font-medium text-gray-900">
-                              {doc.filename}
-                            </td>
-                            <td className="px-3 py-2">{doc.pageCount || "—"}</td>
-                            <td className="px-3 py-2">{doc.needsTranslation ? "Yes" : "No"}</td>
-                            <td className="px-3 py-2 text-gray-500">
-                              {new Date(submission.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <button
-                                onClick={() => handleDeleteFile(submission, idx)}
-                                disabled={preventDelete}
-                                className={`text-xs font-medium ${
-                                  preventDelete
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : "text-red-600 hover:underline"
-                                }`}
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
+                        {(submission.documents || []).map((doc, idx) => {
+                          // Delete is blocked ONLY if this document's translation was already paid
+                          const preventDelete = doc?.translationPaid === true;
+
+                          return (
+                            <tr key={idx} className="border-b border-gray-100 last:border-b-0">
+                              <td className="px-3 py-2 break-all font-medium text-gray-900">
+                                {doc.filename}
+                              </td>
+
+                              <td className="px-3 py-2">{doc.pageCount || "—"}</td>
+
+                              <td className="px-3 py-2">
+                                {doc.needsTranslation ? "Yes" : "No"}
+                              </td>
+
+                              <td className="px-3 py-2 text-right">
+                                <button
+                                  onClick={() => handleDeleteFile(submission, idx)}
+                                  disabled={preventDelete}
+                                  className={`text-xs font-medium ${
+                                    preventDelete
+                                      ? "text-gray-400 cursor-not-allowed"
+                                      : "text-red-600 hover:underline"
+                                  }`}
+                                  title={
+                                    preventDelete
+                                      ? "This document’s translation has already been paid and cannot be deleted."
+                                      : "Delete document"
+                                  }
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Add docs: allowed after payment; blocked only if hardLocked */}
                   <div className="mt-6">
                     <AddDocumentsForm
                       submissionId={submission.submissionId}
-                      disabled={hardLocked}
                       onUploaded={fetchSubmissions}
+                     
                     />
 
-                    {hardLocked && (
+                    {isPaid && (
                       <p className="text-xs text-gray-500 mt-2">
-                        This submission is locked by the system. Please contact support.
-                      </p>
-                    )}
-
-                    {isPaid && !hardLocked && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        This evaluation is paid. You can still upload additional requested documents if needed.
-                        If new documents require translation, you’ll pay only for the new pages (next step).
+                        This evaluation is paid. You can still upload additional requested documents.
+                        If new documents require translation, you can pay only for new pages.
                       </p>
                     )}
                   </div>
 
-                  {/* Pricing / payment */}
                   <div className="mt-6">
                     <CostSummary
                       submission={submission}
                       onProceedToPayment={() => handleProceedToPayment(submission)}
+                      onPayAdditionalTranslation={() => handlePayAdditionalTranslation(submission.submissionId)}
                     />
+
+                    {hasUnpaidTranslation(submission) && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => handlePayAdditionalTranslation(submission.submissionId)}
+                          className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                        >
+                          Pay Additional Translation
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This submission has newly-added documents that require translation.
+                          You will be charged only for unpaid pages.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

@@ -1,5 +1,5 @@
 
-//routes/TranscriptRoutes
+//Backend/routes/TranscriptRoutes.js
 const express = require("express");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
@@ -127,6 +127,7 @@ router.post("/add-to-submission/:submissionId", upload.array("files"), async (re
     res.status(500).json({ error: "Failed to add documents" });
   }
 });
+
 // Delete file
 router.delete("/:submissionId/document/:documentIndex", async (req, res) => {
   try {
@@ -135,7 +136,8 @@ router.delete("/:submissionId/document/:documentIndex", async (req, res) => {
 
     const { id: studentId } = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { submissionId, documentIndex } = req.params;
+    const { submissionId } = req.params;
+    const documentIndex = Number(req.params.documentIndex); // ✅ ensure number
 
     // Find the submission
     const submission = await Transcript.findOne({
@@ -148,11 +150,20 @@ router.delete("/:submissionId/document/:documentIndex", async (req, res) => {
     }
 
     if (
-      !submission.documents ||
+      !Array.isArray(submission.documents) ||
+      Number.isNaN(documentIndex) ||
       documentIndex < 0 ||
       documentIndex >= submission.documents.length
     ) {
       return res.status(400).json({ error: "Invalid document index" });
+    }
+
+    // ✅ BLOCK deletion if this specific doc has already been paid for translation
+    const doc = submission.documents[documentIndex];
+    if (doc?.translationPaid === true) {
+      return res.status(403).json({
+        error: "This document’s translation has already been paid and it cannot be deleted.",
+      });
     }
 
     // Remove the document from array
@@ -161,7 +172,9 @@ router.delete("/:submissionId/document/:documentIndex", async (req, res) => {
     // If there are no documents left, delete the entire submission
     if (submission.documents.length === 0) {
       await Transcript.deleteOne({ _id: submission._id });
-      return res.json({ message: "Document removed, submission deleted as it had no remaining documents." });
+      return res.json({
+        message: "Document removed, submission deleted as it had no remaining documents.",
+      });
     }
 
     // Otherwise, save updated submission

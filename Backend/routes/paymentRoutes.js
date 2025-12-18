@@ -167,4 +167,75 @@ router.get("/evaluation-receipt/:sessionId", async (req, res) => {
   }
 });
 
+
+router.post("/create-additional-translation-checkout", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    const { id: studentId } = jwt.verify(token, process.env.JWT_SECRET);
+    const { submissionId } = req.body;
+
+    if (!submissionId) {
+      return res.status(400).json({ error: "Submission ID is required" });
+    }
+
+    const submission = await Transcript.findOne({
+      submissionId,
+      student: studentId,
+    });
+
+    if (!submission) {
+      return res.status(404).json({ error: "Submission not found" });
+    }
+
+    const unpaidTranslationDocs = (submission.documents || []).filter(
+      (d) => d.needsTranslation && !d.translationPaid
+    );
+
+    if (unpaidTranslationDocs.length === 0) {
+      return res.status(400).json({ error: "No unpaid translation pages." });
+    }
+
+    const translationPages = unpaidTranslationDocs.reduce(
+      (sum, d) => sum + (d.pageCount || 1),
+      0
+    );
+
+    const translationDocIds = unpaidTranslationDocs.map((d) => String(d._id));
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Additional Translation",
+              description: `${translationPages} page(s)`,
+            },
+            unit_amount: TRANSLATION_FEE_PER_PAGE_CENTS,
+          },
+          quantity: translationPages,
+        },
+      ],
+      success_url: `${process.env.CLIENT_URL}/payment-success-translation?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/student-dashboard`,
+      metadata: {
+        type: "additional_translation",
+        submissionId: String(submission.submissionId),
+        studentId: String(studentId),
+        translationPages: String(translationPages),
+        translationDocIds: translationDocIds.join(","),
+      },
+    });
+
+    return res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Failed to create translation checkout" });
+  }
+});
+
 module.exports = router;
