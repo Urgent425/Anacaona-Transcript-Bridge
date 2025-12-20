@@ -63,19 +63,25 @@ router.post("/submit", upload.array("files"), async (req, res) => {
   }
 });
 
-// View submissions for current student
+// View submissions for current student (one Transcript = one submission package)
 router.get("/mine", async (req, res) => {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
     const { id } = jwt.verify(token, process.env.JWT_SECRET);
 
-    const submissions = await Transcript.find({ student: id }).sort({ createdAt: -1 });
+    const submissions = await Transcript.find({ student: id })
+      .select("-documents.buffer")            // IMPORTANT: don't send file buffers to UI
+      .sort({ createdAt: -1 });
+
     res.json(submissions);
   } catch (err) {
     console.error(err);
     res.status(401).json({ error: "Invalid token" });
   }
 });
+
 
 // Add more documents to existing submission
 router.post("/add-to-submission/:submissionId", upload.array("files"), async (req, res) => {

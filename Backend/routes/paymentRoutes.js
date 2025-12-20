@@ -23,6 +23,24 @@ function requireStudentId(req) {
   }
 }
 
+//Payment by submission method
+function getMethodFee(submissionMethod) {
+  if (submissionMethod === "digital") {
+    return {
+      label: "Transcript Fee (school release)",
+      cents: TRANSCRIPT_FEE_CENTS,
+    };
+  }
+  if (submissionMethod === "sealed") {
+    return {
+      label: "Shipping Fee (sealed packet)",
+      cents: SHIPPING_FEE_CENTS,
+    };
+  }
+  return { label: "Method Fee", cents: 0 };
+}
+
+
 router.post("/create-evaluation-checkout-session", async (req, res) => {
   try {
     const auth = requireStudentId(req);
@@ -39,23 +57,26 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
       return res.status(404).json({ error: "Submission not found" });
     }
 
-    // Prevent double-paying
+    // Prevent double-paying evaluation
     if (submission.paymentStatus === "paid") {
       return res.status(400).json({ error: "This submission is already paid." });
     }
 
     const docs = Array.isArray(submission.documents) ? submission.documents : [];
 
-    // Count ONLY pages that need translation AND are not already paid
+    // Translation pages: ONLY pages needing translation and not already paid
     const unpaidTranslationDocs = docs.filter(d => d?.needsTranslation && !d?.translationPaid);
+    const translationPages = unpaidTranslationDocs.reduce((sum, d) => sum + (Number(d.pageCount) || 1), 0);
+    const translationDocIds = unpaidTranslationDocs.map(d => String(d._id));
 
-    const translationPages = unpaidTranslationDocs.reduce((sum, d) => {
-      return sum + (Number(d.pageCount) || 1);
-    }, 0);
-
-  const translationDocIds = unpaidTranslationDocs.map(d => String(d._id));
+    // NEW: method fee based on submissionMethod
+    const method = getMethodFee(submission.submissionMethod);
+    if (method.cents < 0) {
+      return res.status(400).json({ error: "Invalid submission method fee." });
+    }
 
     const line_items = [
+      // Base evaluation fee
       {
         price_data: {
           currency: "usd",
@@ -64,8 +85,26 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
         },
         quantity: 1,
       },
+
+      // Method fee (digital transcript fee OR sealed shipping fee)
+      ...(method.cents > 0
+        ? [{
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: method.label,
+                description: submission.submissionMethod === "digital"
+                  ? "Paid to institution for transcript release"
+                  : "Shipping label and handling",
+              },
+              unit_amount: method.cents,
+            },
+            quantity: 1,
+          }]
+        : []),
     ];
 
+    // Translation (per page)
     if (translationPages > 0) {
       line_items.push({
         price_data: {
@@ -93,6 +132,11 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
         submissionId: String(submission.submissionId),
         transcriptMongoId: String(submission._id),
         studentId: String(studentId),
+
+        // Helpful for webhook verification/audit
+        submissionMethod: String(submission.submissionMethod),
+        methodFeeCents: String(method.cents),
+
         translationPages: String(translationPages),
         translationDocIds: translationDocIds.join(","),
       },
@@ -100,7 +144,7 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
 
     // Save session id (DO NOT lock yet — wait for webhook confirmation)
     submission.stripeSessionId = session.id;
-    submission.locked = false; // keep false until webhook marks paid (optional)
+    submission.locked = false;
     await submission.save();
 
     return res.json({ url: session.url });
@@ -109,6 +153,7 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
     return res.status(500).json({ error: "Failed to create checkout session" });
   }
 });
+
 
 /**
  * Used by PaymentSuccessEval.jsx

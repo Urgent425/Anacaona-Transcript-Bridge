@@ -37,21 +37,19 @@ const CostSummary = ({
   const translationCostUnpaid = translationPagesUnpaid * TRANSLATION_FEE_PER_PAGE;
 
   // Evaluation method cost (base fee + method fee)
-  const { methodLabel, methodCost } = useMemo(() => {
-    if (submission.submissionMethod === "digital") {
-      return {
-        methodLabel: "Transcript Fee (school release)",
-        methodCost: EVALUATION_FEE + TRANSCRIPT_FEE,
-      };
-    }
-    if (submission.submissionMethod === "sealed") {
-      return {
-        methodLabel: "Shipping Fee (sealed packet)",
-        methodCost: EVALUATION_FEE + SHIPPING_FEE,
-      };
-    }
-    return { methodLabel: "Processing Fee", methodCost: EVALUATION_FEE };
-  }, [submission.submissionMethod]);
+  const methodFee = useMemo(() => {
+  if (submission.submissionMethod === "digital") return TRANSCRIPT_FEE;
+  if (submission.submissionMethod === "sealed") return SHIPPING_FEE;
+  return 0;
+}, [submission.submissionMethod]);
+
+const methodLabel = submission.submissionMethod === "digital"
+  ? "Transcript Fee (school release)"
+  : submission.submissionMethod === "sealed"
+  ? "Shipping Fee (sealed packet)"
+  : "Method Fee";
+
+const evaluationTotal = EVALUATION_FEE + methodFee;
 
   // What should the button charge?
   // - If evaluation NOT paid: pay methodCost + translation pages (all translation pages currently in package)
@@ -65,10 +63,10 @@ const CostSummary = ({
     <div className="bg-gray-50 p-4 mt-2 rounded border">
       <h5 className="font-semibold mb-2">Pricing Summary</h5>
 
-      <p>
-        Evaluation fee (${EVALUATION_FEE}) + {methodLabel}:{" "}
-        <strong>${methodCost.toFixed(2)}</strong>
-      </p>
+     <p>Evaluation Fee: <strong>${EVALUATION_FEE.toFixed(2)}</strong></p>
+    <p>{methodLabel}: <strong>${methodFee.toFixed(2)}</strong></p>
+    <p className="font-semibold">Evaluation subtotal: ${evaluationTotal.toFixed(2)}</p>
+
 
       <p>
         Translation Fee (${TRANSLATION_FEE_PER_PAGE}/page):{" "}

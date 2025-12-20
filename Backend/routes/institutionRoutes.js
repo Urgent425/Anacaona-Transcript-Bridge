@@ -1,18 +1,18 @@
 // backend/routes/institutionRoutes.js
-const express                = require("express");
-const mongoose               = require("mongoose");
-const Transcript             = require("../models/Transcript");
+const express = require("express");
+const mongoose = require("mongoose");
+const Transcript = require("../models/Transcript");
 const { protectInstitution } = require("../middleware/protectInstitution");
-const multer                = require("multer");
-const path                  = require("path");
-const fs                    = require("fs");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-const router                 = express.Router();
-
+const router = express.Router();
 router.use(protectInstitution);
 
- // ──────────────────────────────────────────────────────────
- // Local storage for official uploads (swap to S3/GridFS later if you want)
+/* ──────────────────────────────────────────────────────────
+   Local storage for official uploads (swap to S3/GridFS later)
+─────────────────────────────────────────────────────────── */
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "official");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -20,7 +20,6 @@ const upload = multer({
   dest: UPLOAD_DIR,
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
   fileFilter: (req, file, cb) => {
-    // PDFs only by default
     if (file.mimetype === "application/pdf") return cb(null, true);
     return cb(new Error("Only PDF files are allowed"));
   },
@@ -34,35 +33,60 @@ function ensureObjectId(res, id) {
   return true;
 }
 
-// ---------------------------------------------------------------------------
-// GET /api/institution/submissions  (unchanged)
+function safeFilename(name) {
+  return String(name || "file.pdf").replace(/[\\/]/g, "_");
+}
+
+/* ──────────────────────────────────────────────────────────
+   GET /api/institution/submissions
+   (Aligned with new InstitutionDashboard.jsx)
+   Returns { items, total, page, pageSize }
+   Adds official upload summary fields for progress badges.
+─────────────────────────────────────────────────────────── */
 router.get("/submissions", async (req, res, next) => {
   try {
     const instId = req.institution._id;
+
     const {
-      status   = "pending",
-      q        = "",
-      page     = 1,
+      status = "pending",
+      q = "",
+      page = 1,
       pageSize = 10,
+
+      // Optional: allow method override later; default is digital per your workflow
+      method,
     } = req.query;
 
-    const allowed = ["pending","approved","rejected"];
+    const allowed = ["pending", "approved", "rejected"];
     const statusFilter = allowed.includes(String(status).toLowerCase())
       ? String(status).toLowerCase()
       : "pending";
 
-    const pageN = Math.max(1, parseInt(page));
-    const sizeN = Math.max(1, Math.min(100, parseInt(pageSize)));
+    const pageN = Math.max(1, parseInt(page, 10) || 1);
+    const sizeN = Math.max(1, Math.min(100, parseInt(pageSize, 10) || 10));
+
+    // Default: institution handles digital approval flow
+    const methodFilter =
+      typeof method === "string" && ["digital", "sealed"].includes(method)
+        ? method
+        : "digital";
 
     const match = {
-      submissionMethod:   "digital",
-      approvalStatus:     statusFilter,
+      approvalStatus: statusFilter,
       assignedInstitution: new mongoose.Types.ObjectId(instId),
+      submissionMethod: methodFilter,
     };
 
     const pipeline = [
       { $match: match },
-      { $lookup: { from: "users", localField: "student", foreignField: "_id", as: "student" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "student",
+          foreignField: "_id",
+          as: "student",
+        },
+      },
       { $unwind: "$student" },
     ];
 
@@ -72,9 +96,9 @@ router.get("/submissions", async (req, res, next) => {
         $match: {
           $or: [
             { "student.firstName": regex },
-            { "student.lastName":  regex },
-            { "student.email":     regex },
-            { submissionId:        regex },
+            { "student.lastName": regex },
+            { "student.email": regex },
+            { submissionId: regex },
           ],
         },
       });
@@ -86,42 +110,70 @@ router.get("/submissions", async (req, res, next) => {
           submissionId: 1,
           purpose: 1,
           approvalStatus: 1,
+          rejectionReason: 1,
           createdAt: 1,
-          assignedInstitution: 1,
+          updatedAt: 1,
+          submissionMethod: 1,
+
           "student._id": 1,
           "student.firstName": 1,
           "student.lastName": 1,
           "student.email": 1,
+
+          // Documents: lightweight meta only (NO buffer)
           documents: {
             $map: {
-              input: "$documents",
+              input: { $ifNull: ["$documents", []] },
               as: "d",
               in: {
                 filename: "$$d.filename",
                 mimetype: "$$d.mimetype",
                 needsTranslation: "$$d.needsTranslation",
                 pageCount: "$$d.pageCount",
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+
+          // Official upload summary for UI badges / stepper
+          officialUploadsCount: {
+            $size: { $ifNull: ["$officialUploads", []] },
+          },
+          latestOfficial: { $arrayElemAt: ["$officialUploads", -1] },
+        },
       },
+      {
+        $addFields: {
+          latestOfficialStatus: "$latestOfficial.status",
+          latestOfficialUploadedAt: "$latestOfficial.uploadedAt",
+        },
+      },
+      { $unset: "latestOfficial" },
       { $sort: { createdAt: -1 } },
       {
         $facet: {
-          items: [ { $skip: (pageN - 1) * sizeN }, { $limit: sizeN } ],
-          total: [ { $count: "count" } ],
-        }
+          items: [{ $skip: (pageN - 1) * sizeN }, { $limit: sizeN }],
+          total: [{ $count: "count" }],
+        },
       }
     );
 
     const [result] = await Transcript.aggregate(pipeline).exec();
-    const items = (result.items || []).map(row => ({
+
+    const items = (result?.items || []).map((row) => ({
       _id: row._id,
       submissionId: row.submissionId,
       purpose: row.purpose,
       approvalStatus: row.approvalStatus,
+      rejectionReason: row.rejectionReason,
+      submissionMethod: row.submissionMethod,
       createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+
+      officialUploadsCount:
+        typeof row.officialUploadsCount === "number" ? row.officialUploadsCount : 0,
+      latestOfficialStatus: row.latestOfficialStatus || null,
+      latestOfficialUploadedAt: row.latestOfficialUploadedAt || null,
+
       student: {
         _id: row.student?._id,
         firstName: row.student?.firstName,
@@ -130,22 +182,28 @@ router.get("/submissions", async (req, res, next) => {
       },
       documents: row.documents || [],
     }));
-    const total = result.total?.[0]?.count || 0;
 
-    res.json({ items, total, page: pageN, pageSize: sizeN });
+    const totalCount = result?.total?.[0]?.count || 0;
+
+    res.json({ items, total: totalCount, page: pageN, pageSize: sizeN });
   } catch (err) {
     console.error("Error listing institution submissions:", err);
     next(err);
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /api/institution/submissions/:id  (unchanged)
+/* ──────────────────────────────────────────────────────────
+   GET /api/institution/submissions/:id
+   Returns full submission details (no documents.buffer)
+─────────────────────────────────────────────────────────── */
 router.get("/submissions/:id", async (req, res, next) => {
   try {
     const instId = req.institution._id;
+    const subId = req.params.id;
+    if (!ensureObjectId(res, subId)) return;
+
     const sub = await Transcript.findOne({
-      _id: req.params.id,
+      _id: subId,
       assignedInstitution: instId,
     })
       .populate("student", "firstName lastName email")
@@ -160,24 +218,32 @@ router.get("/submissions/:id", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST /api/institution/submissions/:id/approve  (unchanged)
+/* ──────────────────────────────────────────────────────────
+   POST /api/institution/submissions/:id/approve
+─────────────────────────────────────────────────────────── */
 router.post("/submissions/:id/approve", async (req, res, next) => {
   try {
     const instId = req.institution._id;
+    const subId = req.params.id;
+    if (!ensureObjectId(res, subId)) return;
+
     const sub = await Transcript.findOne({
-      _id: req.params.id,
+      _id: subId,
       assignedInstitution: instId,
     });
+
     if (!sub) return res.status(404).json({ message: "Not found" });
 
     sub.approvalStatus = "approved";
+    sub.rejectionReason = undefined;
+
     sub.approver = {
-      name:        req.institution.name,
-      role:        "Institution",
+      name: req.institution.name,
+      role: "Institution",
       institution: instId,
-      timestamp:   new Date(),
+      timestamp: new Date(),
     };
+
     await sub.save();
     res.json({ message: "Approved" });
   } catch (err) {
@@ -186,26 +252,37 @@ router.post("/submissions/:id/approve", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST /api/institution/submissions/:id/reject  (unchanged)
+/* ──────────────────────────────────────────────────────────
+   POST /api/institution/submissions/:id/reject
+─────────────────────────────────────────────────────────── */
 router.post("/submissions/:id/reject", async (req, res, next) => {
   try {
     const instId = req.institution._id;
+    const subId = req.params.id;
+    if (!ensureObjectId(res, subId)) return;
+
     const { reason } = req.body || {};
+    if (!reason || !String(reason).trim()) {
+      return res.status(400).json({ message: "Rejection reason is required" });
+    }
+
     const sub = await Transcript.findOne({
-      _id: req.params.id,
+      _id: subId,
       assignedInstitution: instId,
     });
+
     if (!sub) return res.status(404).json({ message: "Not found" });
 
-    sub.approvalStatus  = "rejected";
-    sub.rejectionReason = reason;
+    sub.approvalStatus = "rejected";
+    sub.rejectionReason = String(reason).trim();
+
     sub.approver = {
-      name:        req.institution.name,
-      role:        "Institution",
+      name: req.institution.name,
+      role: "Institution",
       institution: instId,
-      timestamp:   new Date(),
+      timestamp: new Date(),
     };
+
     await sub.save();
     res.json({ message: "Rejected" });
   } catch (err) {
@@ -214,42 +291,50 @@ router.post("/submissions/:id/reject", async (req, res, next) => {
   }
 });
 
-// ──────────────────────────────────────────────────────────
-// NEW: POST /api/institution/submissions/:id/official-upload
+/* ──────────────────────────────────────────────────────────
+   POST /api/institution/submissions/:id/official-upload
+   Upload official PDF for approved submission
+─────────────────────────────────────────────────────────── */
 router.post(
   "/submissions/:id/official-upload",
-  upload.single("file"), // expects field name "file"
+  upload.single("file"), // field name must be "file"
   async (req, res, next) => {
     try {
-      const { id } = req.params;
-      if (!ensureObjectId(res, id)) return;
+      const subId = req.params.id;
+      if (!ensureObjectId(res, subId)) return;
 
       const instId = req.institution._id;
-      const userId = req.user.id;
+      const userId = req.user?.id;
 
       const sub = await Transcript.findOne({
-        _id: id,
+        _id: subId,
         assignedInstitution: instId,
       });
+
       if (!sub) return res.status(404).json({ message: "Not found" });
 
-      // Optional policy: require approved first
+      // policy: must be approved before uploading official files
       if (sub.approvalStatus !== "approved") {
-        return res.status(400).json({ message: "Transcript must be approved before uploading official files" });
+        return res.status(400).json({
+          message: "Transcript must be approved before uploading official files",
+        });
       }
 
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
+      if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
       sub.officialUploads.push({
-        filename: req.file.originalname,
+        filename: safeFilename(req.file.originalname),
         mimetype: req.file.mimetype,
         size: req.file.size,
         storagePath: req.file.path,
+        reason: "initial",
+        note: "",
+        version: (sub.officialUploads?.length || 0) + 1,
+        status: "pending_scan",
+        uploadedAt: new Date(),
         uploadedBy: {
           userId,
-          name: req.user.name,
+          name: req.user?.name || req.institution?.name || "Institution",
           institution: instId,
         },
       });
@@ -270,48 +355,109 @@ router.post(
   }
 );
 
-// NEW: GET /api/institution/submissions/:id/officials  (list)
+/* ──────────────────────────────────────────────────────────
+   GET /api/institution/submissions/:id/officials
+   List official uploads
+─────────────────────────────────────────────────────────── */
 router.get("/submissions/:id/officials", async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (!ensureObjectId(res, id)) return;
+    const subId = req.params.id;
+    if (!ensureObjectId(res, subId)) return;
 
     const instId = req.institution._id;
 
     const sub = await Transcript.findOne({
-      _id: id,
+      _id: subId,
       assignedInstitution: instId,
     })
       .select("officialUploads")
       .lean();
 
     if (!sub) return res.status(404).json({ message: "Not found" });
-
     res.json({ items: sub.officialUploads || [] });
   } catch (err) {
     next(err);
   }
 });
 
-// NEW: GET /api/institution/submissions/:id/officials/:idx/download
+/* ──────────────────────────────────────────────────────────
+   GET /api/institution/submissions/:id/officials/:idx/download
+   Download official upload by index (kept for current frontend)
+─────────────────────────────────────────────────────────── */
 router.get("/submissions/:id/officials/:idx/download", async (req, res, next) => {
   try {
-    const { id, idx } = req.params;
-    if (!ensureObjectId(res, id)) return;
+    const { id: subId, idx } = req.params;
+    if (!ensureObjectId(res, subId)) return;
 
     const instId = req.institution._id;
+
     const sub = await Transcript.findOne({
-      _id: id,
+      _id: subId,
       assignedInstitution: instId,
     }).select("officialUploads");
+
     if (!sub) return res.status(404).json({ message: "Not found" });
 
     const i = parseInt(idx, 10);
+    if (Number.isNaN(i) || i < 0) {
+      return res.status(400).json({ message: "Invalid file index" });
+    }
+
     const file = sub.officialUploads?.[i];
     if (!file) return res.status(404).json({ message: "File not found" });
 
-    res.setHeader("Content-Type", file.mimetype || "application/octet-stream");
-    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(file.filename)}"`);
+    if (!file.storagePath || !fs.existsSync(file.storagePath)) {
+      return res.status(404).json({ message: "Stored file missing on server" });
+    }
+
+    res.setHeader("Content-Type", file.mimetype || "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
+    );
+
+    fs.createReadStream(file.storagePath).pipe(res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ──────────────────────────────────────────────────────────
+   OPTIONAL / RECOMMENDED:
+   Download official upload by its ObjectId (stable)
+   (Frontend can switch later; does not break anything now.)
+─────────────────────────────────────────────────────────── */
+router.get("/submissions/:id/officials/by-id/:fileId/download", async (req, res, next) => {
+  try {
+    const { id: subId, fileId } = req.params;
+    if (!ensureObjectId(res, subId)) return;
+
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      return res.status(400).json({ message: "Invalid file id" });
+    }
+
+    const instId = req.institution._id;
+
+    const sub = await Transcript.findOne({
+      _id: subId,
+      assignedInstitution: instId,
+    }).select("officialUploads");
+
+    if (!sub) return res.status(404).json({ message: "Not found" });
+
+    const file = (sub.officialUploads || []).find((f) => String(f._id) === String(fileId));
+    if (!file) return res.status(404).json({ message: "File not found" });
+
+    if (!file.storagePath || !fs.existsSync(file.storagePath)) {
+      return res.status(404).json({ message: "Stored file missing on server" });
+    }
+
+    res.setHeader("Content-Type", file.mimetype || "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
+    );
+
     fs.createReadStream(file.storagePath).pipe(res);
   } catch (err) {
     next(err);
