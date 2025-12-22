@@ -2,13 +2,12 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const mongoose = require("mongoose");
-const path = require("path");
-const fs = require("fs");
 
 const TranslationRequest = require("../models/TranslationRequest");
 const User = require("../models/User");
 const Stripe = require("stripe");
+
+const { buildKey, uploadBuffer } = require("../services/r2Storage");
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -21,24 +20,10 @@ const NOTARY_FEE_CENTS = 1500;              // $15 flat
 const SHIPPING_FEE_CENTS = 1000;            // $10 flat
 
 // ─────────────────────────────────────────────────────────────
-// File upload: store to disk so FileSchema.path is populated
+// File upload: memory only (Render-safe) + upload to R2
 // ─────────────────────────────────────────────────────────────
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "translations");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
-    cb(null, UPLOAD_DIR);
-  },
-  filename: function (_req, file, cb) {
-    const safeOriginal = (file.originalname || "file").replace(/[^\w.\-() ]+/g, "_");
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `${unique}-${safeOriginal}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB each
 });
 
@@ -52,7 +37,7 @@ function requireStudentId(req) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     return { studentId: decoded.id };
-  } catch (e) {
+  } catch (_e) {
     return { error: { code: 401, body: { error: "Unauthorized" } } };
   }
 }
@@ -60,8 +45,12 @@ function requireStudentId(req) {
 // ─────────────────────────────────────────────────────────────
 // Address helpers (US-only policy)
 // ─────────────────────────────────────────────────────────────
+function safeLower(v) {
+  return String(v || "").toLowerCase().trim();
+}
+
 function normalizeDeliveryMethod(v) {
-  const s = String(v || "").toLowerCase().trim();
+  const s = safeLower(v);
   if (!s) return "";
   if (s === "hardcopy" || s === "hard copy" || s === "mail" || s === "shipping") return "hard copy";
   if (s === "email" || s === "digital") return "email";
@@ -93,7 +82,7 @@ function buildStudentName(user) {
 
 function coerceBool(v) {
   if (typeof v === "boolean") return v;
-  const s = String(v || "").toLowerCase().trim();
+  const s = safeLower(v);
   return s === "true" || s === "1" || s === "yes" || s === "on";
 }
 
@@ -156,7 +145,7 @@ function validateUsShippingAddress(addr) {
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/translation-requests
-// Create a translation request
+// Create a translation request (files uploaded to R2)
 // ─────────────────────────────────────────────────────────────
 router.post("/", upload.array("files"), async (req, res) => {
   try {
@@ -164,7 +153,14 @@ router.post("/", upload.array("files"), async (req, res) => {
     if (auth.error) return res.status(auth.error.code).json(auth.error.body);
     const studentId = auth.studentId;
 
-    const pageCounts = JSON.parse(req.body.pageCounts || "[]");
+    // pageCounts may come as JSON string
+    let pageCounts = [];
+    try {
+      pageCounts = JSON.parse(req.body.pageCounts || "[]");
+      if (!Array.isArray(pageCounts)) pageCounts = [];
+    } catch {
+      pageCounts = [];
+    }
 
     const sourceLanguage = req.body.sourceLanguage;
     const targetLanguage = req.body.targetLanguage;
@@ -178,14 +174,6 @@ router.post("/", upload.array("files"), async (req, res) => {
     if (!sourceLanguage || !targetLanguage || !deliveryMethod) {
       return res.status(400).json({ message: "Missing required fields" });
     }
-
-    // Build file list (schema expects path)
-    const files = req.files.map((file, index) => ({
-      filename: file.originalname,
-      mimetype: file.mimetype,
-      path: file.path,
-      pageCount: pageCounts[index] || 1,
-    }));
 
     // Determine shipping address snapshot (only when required)
     let shippingAddress = null;
@@ -202,7 +190,6 @@ router.post("/", upload.array("files"), async (req, res) => {
       const useSavedAddress = coerceBool(req.body.useSavedAddress);
 
       if (useSavedAddress) {
-        // Preferred: structured address
         if (student.shippingAddress && typeof student.shippingAddress === "object") {
           shippingAddress = {
             name: student.shippingAddress.name || buildStudentName(student),
@@ -215,7 +202,6 @@ router.post("/", upload.array("files"), async (req, res) => {
             phone: student.shippingAddress.phone || student.phone || "",
           };
         } else {
-          // Legacy fallback: user.address (string)
           shippingAddress = {
             name: buildStudentName(student),
             address1: student.address || "",
@@ -238,7 +224,6 @@ router.post("/", upload.array("files"), async (req, res) => {
           });
         }
       } else {
-        // New address submitted in this request
         shippingAddress = parseShippingAddressFromBody(req.body);
         if (!shippingAddress.name) shippingAddress.name = buildStudentName(student);
 
@@ -247,28 +232,57 @@ router.post("/", upload.array("files"), async (req, res) => {
           return res.status(400).json({ message: errMsg, code: "INVALID_SHIPPING_ADDRESS" });
         }
 
-        // Optional: if you want to ALSO save it to user profile automatically,
-        // uncomment this block.
-        //
-        // student.shippingAddress = shippingAddress;
-        // await student.save();
+        // NOTE: if you want to save to user profile, do it here (optional)
       }
     }
 
+    // Create request first to get requestId/_id for deterministic R2 keys
     const request = new TranslationRequest({
       student: studentId,
       sourceLanguage,
       targetLanguage,
       needNotary: !!needNotary,
       deliveryMethod,
-      shippingAddress, // <-- NEW snapshot field (make sure model has it)
-      files,
+      shippingAddress, // snapshot
+      files: [],
       status: "pending",
       locked: false,
       paid: false,
     });
 
     await request.save();
+
+    const requestIdForKey = request.requestId || String(request._id);
+
+    // Upload each file to R2 and record metadata
+    const files = [];
+    for (let index = 0; index < req.files.length; index++) {
+      const file = req.files[index];
+
+      const key = buildKey({
+        prefix: "translation-requests",
+        requestId: requestIdForKey,
+        originalName: file.originalname,
+      });
+
+      await uploadBuffer({
+        key,
+        buffer: file.buffer,
+        contentType: file.mimetype,
+      });
+
+      files.push({
+        filename: file.originalname,
+        mimetype: file.mimetype,
+        pageCount: pageCounts[index] || 1,
+        bucket: process.env.R2_BUCKET,
+        key,
+      });
+    }
+
+    request.files = files;
+    await request.save();
+
     return res.status(201).json({
       message: "Translation request created successfully",
       requestId: request.requestId,
@@ -289,9 +303,7 @@ router.get("/mine", async (req, res) => {
     if (auth.error) return res.status(auth.error.code).json(auth.error.body);
     const studentId = auth.studentId;
 
-    const requests = await TranslationRequest.find({ student: studentId })
-      .sort({ createdAt: -1 });
-
+    const requests = await TranslationRequest.find({ student: studentId }).sort({ createdAt: -1 });
     return res.json(requests);
   } catch (err) {
     console.error("Error fetching translation requests:", err);

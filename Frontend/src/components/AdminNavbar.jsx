@@ -18,7 +18,7 @@ const AdminNavbar = () => {
       <nav className="space-x-6 hidden md:flex">
         {user?.role === "SuperAdmin"||"Translator"||"Reviewer" ? (
           <>
-            <span class="text-2xl text-green-600">Hi, {user?.firstName ?? user?.name ?? "Admin"}</span>
+            <span className="text-2xl text-green-600">Hi, {user?.firstName ?? user?.name ?? "Admin"}</span>
             <button onClick={onLogout} className="bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">
               Logout
             </button>

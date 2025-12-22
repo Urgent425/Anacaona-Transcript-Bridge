@@ -1,6 +1,8 @@
 // controllers/admin/translationRequests.js
 const path = require("path");
 const TranslationRequest = require("../../models/TranslationRequest");
+const { signedGetUrl } = require("../../services/r2Storage");
+
 
 function safeLower(v) {
   return String(v || "").toLowerCase().trim();
@@ -195,28 +197,18 @@ exports.setLocked = async (req, res, next) => {
 exports.downloadFile = async (req, res, next) => {
   try {
     const { id, index } = req.params;
+    const i = Number(index);
 
-    // ✅ select buffer explicitly
-    const doc = await TranslationRequest.findById(id).select("+files.buffer");
-    if (!doc || !doc.files || !doc.files[index]) {
+    const doc = await TranslationRequest.findById(id).select("files");
+    if (!doc || !Array.isArray(doc.files) || !doc.files[i]) {
       return res.status(404).json({ error: "File not found" });
     }
 
-    const f = doc.files[index];
+    const f = doc.files[i];
+    if (!f.key) return res.status(400).json({ error: "Missing R2 key on file." });
 
-    if (f.path) {
-      return res.sendFile(path.resolve(f.path));
-    }
-
-    if (f.buffer && f.buffer.length) {
-      res.setHeader("Content-Type", f.mimetype || "application/octet-stream");
-      res.setHeader("Content-Disposition", `attachment; filename="${f.filename || "file"}"`);
-      return res.send(f.buffer); // ✅ send buffer
-    }
-
-    return res.status(400).json({
-      error: "File storage not configured (no path and no buffer).",
-    });
+    const url = await signedGetUrl({ key: f.key });
+    return res.json({ url }); // ✅ stable
   } catch (err) {
     next(err);
   }

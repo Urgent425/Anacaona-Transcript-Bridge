@@ -10,6 +10,9 @@ const FileSchema = new mongoose.Schema(
     path: { type: String },     // where multer stored it on disk
     size: { type: Number },     // helpful for UI/admin
     buffer: { type: Buffer, select: false },
+    bucket: { type: String },
+    key: { type: String },
+
   },
   { _id: false }
 );

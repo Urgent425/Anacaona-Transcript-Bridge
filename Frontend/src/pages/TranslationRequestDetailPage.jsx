@@ -166,15 +166,15 @@ export default function TranslationRequestDetailPage() {
     }
   };
 
-  // ✅ FIX: download using fetch() with Authorization header
-  const downloadFile = async (fileIndex, filenameHint) => {
+  // ✅ R2-friendly download: call API with Authorization, then open in new tab
+  const downloadFile = async (fileIndex) => {
     try {
       setDownloadingIndex(fileIndex);
 
       const token = localStorage.getItem("token");
-      const url = `${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${id}/files/${fileIndex}`;
+      const apiUrl = `${process.env.REACT_APP_API_URL}/api/admin/translation-requests/${id}/files/${fileIndex}`;
 
-      const res = await fetch(url, {
+      const res = await fetch(apiUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -183,23 +183,17 @@ export default function TranslationRequestDetailPage() {
         throw new Error(`Download failed (${res.status}). ${msg}`.trim());
       }
 
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      const { url } = await res.json();
+      if (!url) throw new Error("Missing signed download URL.");
 
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filenameHint || `file_${fileIndex}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(blobUrl);
+      window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
       alert(e.message || "Download failed.");
     } finally {
       setDownloadingIndex(null);
     }
   };
+
 
   if (loading) return <div className="p-6">Loading…</div>;
   if (err) return <div className="p-6 text-red-600">Error: {err}</div>;
