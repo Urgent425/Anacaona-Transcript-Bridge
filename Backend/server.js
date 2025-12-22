@@ -43,7 +43,7 @@ app.use("/api/admin/users", require("./routes/admin/users"));
 app.use("/api/admin", require("./routes/admin/adminOfficialRoutes"));
 app.use("/api/admin", require("./routes/admin/adminRoutes"));
 app.use("/api/admin", require("./routes/admin/institutionAccess"));
-
+app.use("/api/users", require("./routes/userRoutes"));
 
 
 

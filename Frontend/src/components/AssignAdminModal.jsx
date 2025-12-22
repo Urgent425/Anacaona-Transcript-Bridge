@@ -1,8 +1,12 @@
 // src/components/AssignAdminModal.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Dialog, DialogTrigger, DialogContent,
-  DialogHeader, DialogTitle, DialogFooter
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 
@@ -12,7 +16,8 @@ import { Button } from "./ui/button";
  *  - entityId: string
  *  - currentAssignee: { _id, name, role } | null
  *  - onAssigned: () => void
- *  - roles: optional CSV of roles to show (default: "TRANSLATOR,REVIEWER")
+ *  - roles: CSV roles filter for /api/admin/users (must match backend role strings)
+ *  - allowUnassign: boolean (optional)
  */
 export default function AssignAdminModal({
   entity,
@@ -20,35 +25,53 @@ export default function AssignAdminModal({
   currentAssignee,
   onAssigned,
   roles = "Translator,Reviewer",
+  allowUnassign = false,
 }) {
   const [open, setOpen] = useState(false);
   const [admins, setAdmins] = useState([]);
   const [selected, setSelected] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // fetch the list **when the dialog opens**
+  const token = useMemo(() => localStorage.getItem("token"), []);
+
+  const assignPath =
+    entity === "transcript"
+      ? `${process.env.REACT_APP_API_URL}/api/admin/assignments/transcripts/${entityId}/assign-admin`
+      : `${process.env.REACT_APP_API_URL}/api/admin/assignments/translation-requests/${entityId}/assign-admin`;
+
+  // When dialog opens, preselect current assignee if we have a usable _id
   useEffect(() => {
     if (!open) return;
+    setSelected(currentAssignee?._id || "");
+  }, [open, currentAssignee?._id]);
+
+  // Fetch admins only when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
     (async () => {
       setLoading(true);
       setError("");
       try {
-        const token = localStorage.getItem("token"); // 🔐 IMPORTANT
         if (!token) throw new Error("Missing admin token");
 
-        const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/users?roles=${encodeURIComponent(roles)}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/admin/users?roles=${encodeURIComponent(
+            roles
+          )}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         const ct = res.headers.get("content-type") || "";
         if (!ct.includes("application/json")) {
           const text = await res.text();
-          throw new Error(`Non-JSON response (${res.status}) ${text.slice(0,80)}`);
+          throw new Error(`Non-JSON response (${res.status}) ${text.slice(0, 120)}`);
         }
 
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+
         setAdmins(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error("AssignAdminModal: load admins failed", e);
@@ -58,52 +81,69 @@ export default function AssignAdminModal({
         setLoading(false);
       }
     })();
-  }, [open, roles]);
+  }, [open, roles, token]);
 
   const assign = async () => {
     try {
-      const token = localStorage.getItem("token"); // 🔐 IMPORTANT
       if (!token) throw new Error("Missing admin token");
 
-      const path =
-        entity === "transcript"
-          ? `${process.env.REACT_APP_API_URL}/api/admin/assignments/transcripts/${entityId}/assign-admin`
-          : `${process.env.REACT_APP_API_URL}/api/admin/assignments/translation-requests/${entityId}/assign-admin`;
+      const body = allowUnassign && selected === "__UNASSIGN__"
+        ? { adminId: null }
+        : { adminId: selected };
 
-      const res = await fetch(path, {
+      const res = await fetch(assignPath, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ adminId: selected }),
+        body: JSON.stringify(body),
       });
 
       const ct = res.headers.get("content-type") || "";
       const okJson = ct.includes("application/json");
       const payload = okJson ? await res.json() : await res.text();
 
-      if (!res.ok) throw new Error((okJson ? payload?.message : payload) || `HTTP ${res.status}`);
+      if (!res.ok) {
+        throw new Error((okJson ? payload?.message : payload) || `HTTP ${res.status}`);
+      }
 
       setOpen(false);
-      onAssigned?.(); // refresh the row/table so currentAssignee updates
+      onAssigned?.();
     } catch (e) {
       alert(e.message || "Assign failed");
     }
   };
 
+  const title = currentAssignee?.name
+    ? `Reassign (current: ${currentAssignee.name})`
+    : "Assign to Admin";
+
+  const confirmDisabled =
+    loading ||
+    !!error ||
+    (!selected && !(allowUnassign && selected === "__UNASSIGN__"));
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSelected(""); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) {
+          setError("");
+          setSelected("");
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           {currentAssignee ? "Reassign" : "Assign"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px]">
+
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle>
-            {currentAssignee ? `Reassign (current: ${currentAssignee.name})` : "Assign to Admin"}
-          </DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
         {loading ? (
@@ -111,22 +151,38 @@ export default function AssignAdminModal({
         ) : error ? (
           <p className="text-sm text-red-600">Error: {error}</p>
         ) : (
-          <select
-            className="w-full border rounded px-2 py-1"
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-          >
-            <option value="">Select admin…</option>
-            {admins.map((a) => (
-              <option key={a._id} value={a._id}>
-                {a.name} — {a.role}
+          <div className="space-y-2">
+            <select
+              className="w-full border rounded px-2 py-2 text-sm"
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+            >
+              <option value="">
+                Select admin…
               </option>
-            ))}
-          </select>
+
+              {allowUnassign && (
+                <option value="__UNASSIGN__">Unassign</option>
+              )}
+
+              {admins.map((a) => (
+                <option key={a._id} value={a._id}>
+                  {a.name} — {a.role}
+                </option>
+              ))}
+            </select>
+
+            {!currentAssignee?._id && currentAssignee?.name ? (
+              <p className="text-[11px] text-amber-700">
+                Note: current assignee has no id in this view. To preselect correctly, pass
+                currentAssignee as {"{ _id, name, role }"} from the backend list endpoint.
+              </p>
+            ) : null}
+          </div>
         )}
 
         <DialogFooter>
-          <Button disabled={!selected || loading || !!error} onClick={assign}>
+          <Button disabled={confirmDisabled} onClick={assign}>
             Confirm
           </Button>
         </DialogFooter>
