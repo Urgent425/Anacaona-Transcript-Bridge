@@ -142,7 +142,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
 
   useEffect(() => {
     loadSavedAddress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // When delivery method becomes shipping-required, default to saved address (if available)
@@ -160,7 +160,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
       setShipPhone(savedAddress.phone || "");
       setShipEmail(savedAddress.email || "");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [shippingRequired]);
 
   // If user toggles between saved/new, swap values appropriately
@@ -181,7 +181,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
     } else {
       // “new”: keep whatever user typed (do nothing)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [addressMode]);
 
   const handleFileChange = async (e) => {

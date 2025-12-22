@@ -79,7 +79,7 @@ export default function TranslationRequestDetailPage() {
 
   useEffect(() => {
     fetchDetail();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [id]);
 
   // ✅ Support BOTH response shapes:
