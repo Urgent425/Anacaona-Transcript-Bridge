@@ -197,7 +197,7 @@ exports.downloadFile = async (req, res, next) => {
     const { id, index } = req.params;
 
     // ✅ select buffer explicitly
-    const doc = await TranslationRequest.findById(id).select("files");
+    const doc = await TranslationRequest.findById(id).select("+files.buffer");
     if (!doc || !doc.files || !doc.files[index]) {
       return res.status(404).json({ error: "File not found" });
     }
