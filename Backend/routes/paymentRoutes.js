@@ -10,6 +10,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // Keep aligned with frontend constants
 const EVALUATION_FEE_CENTS = 5000;            // $50
 const TRANSLATION_FEE_PER_PAGE_CENTS = 2500;  // $25 / page
+const TRANSCRIPT_FEE_CENTS = 4000;            // $40
+const SHIPPING_FEE_CENTS = 1000;             // $10
 
 function requireStudentId(req) {
   const token = req.headers.authorization?.split(" ")[1];

@@ -7,23 +7,23 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+const { buildKey, uploadBuffer, signedGetUrl } = require("../services/r2Storage");
+
 const router = express.Router();
 router.use(protectInstitution);
 
 /* ──────────────────────────────────────────────────────────
    Local storage for official uploads (swap to S3/GridFS later)
 ─────────────────────────────────────────────────────────── */
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "official");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
 const upload = multer({
-  dest: UPLOAD_DIR,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype === "application/pdf") return cb(null, true);
     return cb(new Error("Only PDF files are allowed"));
   },
 });
+
 
 function ensureObjectId(res, id) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -297,7 +297,7 @@ router.post("/submissions/:id/reject", async (req, res, next) => {
 ─────────────────────────────────────────────────────────── */
 router.post(
   "/submissions/:id/official-upload",
-  upload.single("file"), // field name must be "file"
+  upload.single("file"),
   async (req, res, next) => {
     try {
       const subId = req.params.id;
@@ -313,7 +313,7 @@ router.post(
 
       if (!sub) return res.status(404).json({ message: "Not found" });
 
-      // policy: must be approved before uploading official files
+      // policy: must be approved
       if (sub.approvalStatus !== "approved") {
         return res.status(400).json({
           message: "Transcript must be approved before uploading official files",
@@ -322,14 +322,32 @@ router.post(
 
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
+      // ✅ Upload to R2
+      const submissionKeyPart = sub.submissionId || String(sub._id);
+      const key = buildKey({
+        prefix: "official-uploads",
+        requestId: submissionKeyPart,
+        originalName: req.file.originalname,
+      });
+
+      await uploadBuffer({
+        key,
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype,
+      });
+
+      const nextVersion = (sub.officialUploads?.length || 0) + 1;
+
       sub.officialUploads.push({
         filename: safeFilename(req.file.originalname),
         mimetype: req.file.mimetype,
         size: req.file.size,
-        storagePath: req.file.path,
+        // storagePath: undefined, // legacy; do not write new disk path
+        bucket: process.env.R2_BUCKET,
+        key,
         reason: "initial",
         note: "",
-        version: (sub.officialUploads?.length || 0) + 1,
+        version: nextVersion,
         status: "pending_scan",
         uploadedAt: new Date(),
         uploadedBy: {
@@ -341,12 +359,13 @@ router.post(
 
       await sub.save();
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Official transcript uploaded",
         file: {
           filename: req.file.originalname,
           mimetype: req.file.mimetype,
           size: req.file.size,
+          version: nextVersion,
         },
       });
     } catch (err) {
@@ -354,6 +373,7 @@ router.post(
     }
   }
 );
+
 
 /* ──────────────────────────────────────────────────────────
    GET /api/institution/submissions/:id/officials
@@ -406,21 +426,28 @@ router.get("/submissions/:id/officials/:idx/download", async (req, res, next) =>
     const file = sub.officialUploads?.[i];
     if (!file) return res.status(404).json({ message: "File not found" });
 
-    if (!file.storagePath || !fs.existsSync(file.storagePath)) {
-      return res.status(404).json({ message: "Stored file missing on server" });
+    // ✅ Preferred: R2 signed URL
+    if (file.key) {
+      const url = await signedGetUrl({ key: file.key });
+      return res.json({ url });
     }
 
-    res.setHeader("Content-Type", file.mimetype || "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
-    );
+    // Legacy fallback (disk) - optional, keep if you want:
+    if (file.storagePath && fs.existsSync(file.storagePath)) {
+      res.setHeader("Content-Type", file.mimetype || "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
+      );
+      return fs.createReadStream(file.storagePath).pipe(res);
+    }
 
-    fs.createReadStream(file.storagePath).pipe(res);
+    return res.status(404).json({ message: "Stored file missing (no key and no local file)" });
   } catch (err) {
     next(err);
   }
 });
+
 
 /* ──────────────────────────────────────────────────────────
    OPTIONAL / RECOMMENDED:
@@ -448,17 +475,68 @@ router.get("/submissions/:id/officials/by-id/:fileId/download", async (req, res,
     const file = (sub.officialUploads || []).find((f) => String(f._id) === String(fileId));
     if (!file) return res.status(404).json({ message: "File not found" });
 
-    if (!file.storagePath || !fs.existsSync(file.storagePath)) {
-      return res.status(404).json({ message: "Stored file missing on server" });
+    if (file.key) {
+      const url = await signedGetUrl({ key: file.key });
+      return res.json({ url });
     }
 
-    res.setHeader("Content-Type", file.mimetype || "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
-    );
+    if (file.storagePath && fs.existsSync(file.storagePath)) {
+      res.setHeader("Content-Type", file.mimetype || "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${encodeURIComponent(safeFilename(file.filename))}"`
+      );
+      return fs.createReadStream(file.storagePath).pipe(res);
+    }
 
-    fs.createReadStream(file.storagePath).pipe(res);
+    return res.status(404).json({ message: "Stored file missing (no key and no local file)" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/institution/submissions/:id/documents/:idx/download
+// Download student-uploaded document by index (R2 signed URL)
+router.get("/submissions/:id/documents/:idx/download", async (req, res, next) => {
+  try {
+    const instId = req.institution._id;
+    const subId = req.params.id;
+    const idx = parseInt(req.params.idx, 10);
+
+    if (!ensureObjectId(res, subId)) return;
+    if (Number.isNaN(idx) || idx < 0) {
+      return res.status(400).json({ message: "Invalid document index" });
+    }
+
+    // IMPORTANT: only allow institutions to access submissions assigned to them
+    const sub = await Transcript.findOne({
+      _id: subId,
+      assignedInstitution: instId,
+    })
+      // do not return buffers
+      .select("documents submissionId")
+      .lean();
+
+    if (!sub) return res.status(404).json({ message: "Not found" });
+
+    const docs = Array.isArray(sub.documents) ? sub.documents : [];
+    const doc = docs[idx];
+    if (!doc) return res.status(404).json({ message: "File not found" });
+
+    // Prefer R2 fields (you should store these on each document)
+    // Example expected fields: doc.key (and optional doc.bucket)
+    if (doc.key) {
+      const { signedGetUrl } = require("../services/r2Storage");
+      const url = await signedGetUrl({ key: doc.key });
+      return res.json({ url });
+    }
+
+    // Legacy fallback: if you still have buffer in DB (not recommended)
+    // NOTE: this requires buffer to be queried; you currently use .lean() without buffer
+    // If you need this fallback, switch to findOne() (non-lean) and select("+documents.buffer").
+    return res.status(410).json({
+      message: "Document not available (missing storage key). Re-upload required.",
+    });
   } catch (err) {
     next(err);
   }

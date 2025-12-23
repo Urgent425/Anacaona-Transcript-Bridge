@@ -23,23 +23,30 @@ const AdminAssignLogSchema = new mongoose.Schema({
 });
 
 const OfficialUploadSchema = new mongoose.Schema({
-  filename:     String,
-  mimetype:     String,
-  size:         Number,
-  pageCount:    Number,
-  storagePath:  String, // or gridFsId/s3Key later
-  sha256:       String, // for dedupe/integrity
-  reason:       { type: String, enum: ["initial", "re-issue", "corrected", "other"], default: "initial" },
-  note:         String,        // free-form reason details
-  version:      { type: Number, default: 1 }, // increment per transcript upload
-  status:       { type: String, enum: ["pending_scan", "clean", "infected"], default: "pending_scan" },
-  uploadedAt:   { type: Date, default: Date.now },
-  uploadedBy:   {
-    userId:      { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    name:        String,
+  filename: String,
+  mimetype: String,
+  size: Number,
+  pageCount: Number,
+
+  // Replace/augment this:
+  // storagePath: String,
+
+  key: { type: String, default: null },     // <-- R2 object key
+  bucket: { type: String, default: null },  // optional
+
+  sha256: String,
+  reason: { type: String, enum: ["initial", "re-issue", "corrected", "other"], default: "initial" },
+  note: String,
+  version: { type: Number, default: 1 },
+  status: { type: String, enum: ["pending_scan", "clean", "infected"], default: "pending_scan" },
+  uploadedAt: { type: Date, default: Date.now },
+  uploadedBy: {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    name: String,
     institution: { type: mongoose.Schema.Types.ObjectId, ref: "Institution" },
   },
 });
+
 
 const transcriptSchema = new mongoose.Schema({
   submissionId:          { type: String, required: true, unique: true, index: true }, // string → great for search, // quick search by human-friendly id
@@ -63,20 +70,27 @@ const transcriptSchema = new mongoose.Schema({
   createdAt:             { type: Date, default: Date.now },
 
   documents: [
-    {
-      filename:        String,
-      buffer:          Buffer,   // ⚠️ heavy: exclude in queries sent to UI
-      mimetype:        String,
-      needsTranslation:Boolean,
-      sourceLanguage:  String,
-      pageCount:       Number,
-      // NEW (important)
-      translationPaid: { type: Boolean, default: false },
-      translationPaidAt: { type: Date, default: null },
-      translationStripeSessionId: { type: String, default: null },
-      addedAt: { type: Date, default: Date.now },
-    }
-  ],
+  {
+    filename:        String,
+    buffer:          Buffer,   // legacy; we will stop writing new buffers
+    mimetype:        String,
+
+    // ✅ R2 storage (new)
+    bucket:          { type: String, default: null },
+    key:             { type: String, default: null },
+    size: { type: Number, default: null },
+
+    needsTranslation:Boolean,
+    sourceLanguage:  String,
+    pageCount:       Number,
+
+    translationPaid: { type: Boolean, default: false },
+    translationPaidAt: { type: Date, default: null },
+    translationStripeSessionId: { type: String, default: null },
+    addedAt: { type: Date, default: Date.now },
+  }
+],
+
 
   assignedInstitution: {
     type: mongoose.Schema.Types.ObjectId,
@@ -100,7 +114,7 @@ transcriptSchema.index({ adminAssignee: 1, createdAt: -1 });
  */
 transcriptSchema.pre("validate", async function(next) {
   try {
-    if (this.submissionId) {
+    if (!this.submissionId) {
       this.submissionId = await generateSequentialId({ prefix: "SUB", width: 4, useDateScope: true });
     }
     next();

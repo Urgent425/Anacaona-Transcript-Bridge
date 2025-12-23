@@ -77,14 +77,61 @@ export default function SubmissionDetailPage() {
     return sub.documents.reduce((sum, d) => sum + (Number(d.pageCount) || 0), 0);
   }, [sub]);
 
-  const downloadAll = () => {
-    // If you have a zip endpoint later, point here. For now, open each in a new tab.
-    if (!sub?.documents?.length) return;
-    sub.documents.forEach((d) => {
-      const url = `/api/download/${sub._id}/${encodeURIComponent(d.filename)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
+  // Download part
+  const downloadStudentDoc = async (docIndex) => {
+  try {
+    const token = localStorage.getItem("token");
+    const apiUrl = `${process.env.REACT_APP_API_URL}/api/admin/transcripts/${id}/documents/${docIndex}/download`;
+
+    const res = await fetch(apiUrl, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-  };
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`Download failed (${res.status}). ${msg}`.trim());
+    }
+
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      const { url } = await res.json();
+      if (!url) throw new Error("Missing signed URL.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `document_${docIndex}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    }
+  } catch (e) {
+    alert(e.message || "Download failed.");
+  }
+};
+
+
+
+  const downloadAll = async () => {
+  if (!sub?.documents?.length) return;
+
+  // Open each document sequentially to avoid popup blockers
+  for (let i = 0; i < sub.documents.length; i++) {
+    try {
+      await downloadStudentDoc(i);
+      // small delay helps browsers treat them as user-initiated
+      
+      await new Promise((r) => setTimeout(r, 300));
+    } catch (e) {
+      alert(`Failed downloading file #${i + 1}: ${e.message || "Download failed."}`);
+      break;
+    }
+  }
+};
+
 
   // ---------- STATES ----------
   if (loading) {
@@ -346,15 +393,20 @@ export default function SubmissionDetailPage() {
                         <td className="px-4 py-3">{d.needsTranslation === true ? "Yes" :
                             d.needsTranslation === false ? "No" : "—"}</td>
                         <td className="px-4 py-3">
-                          <a
-                            className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-50"
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await downloadStudentDoc(idx);
+                              } catch (e) {
+                                alert(e.message || "Download failed.");
+                              }
+                            }}
+                            className="inline-flex items-center gap-2 h-8 text-xs"
                           >
                             <Download className="w-4 h-4" />
                             Download
-                          </a>
+                          </Button>
                         </td>
                       </tr>
                     );

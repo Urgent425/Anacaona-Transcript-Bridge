@@ -26,38 +26,47 @@ const CostSummary = ({
 
   // If you later add doc.translationPaid, we will only charge unpaid pages
   // (If translationPaid is missing, treat as unpaid.)
-  const translationPagesUnpaid = useMemo(() => {
-    return submission.documents.reduce((sum, doc) => {
-      if (!doc?.needsTranslation) return sum;
-      if (doc.translationPaid === true) return sum;
-      return sum + (Number(doc.pageCount) || 1);
-    }, 0);
-  }, [submission.documents]);
+  // Translation pages:
+// - Backend charges ONLY unpaid translation pages (needsTranslation && !translationPaid)
+// - On first payment, unpaid is typically all translation pages (since none are paid yet)
+const translationPagesUnpaid = useMemo(() => {
+  return submission.documents.reduce((sum, doc) => {
+    if (!doc?.needsTranslation) return sum;
+    if (doc.translationPaid === true) return sum;
+    return sum + (Number(doc.pageCount) || 1);
+  }, 0);
+}, [submission.documents]);
 
-  const translationCostUnpaid = translationPagesUnpaid * TRANSLATION_FEE_PER_PAGE;
+const translationCostUnpaid = translationPagesUnpaid * TRANSLATION_FEE_PER_PAGE;
 
-  // Evaluation method cost (base fee + method fee)
-  const methodFee = useMemo(() => {
+// Method fee matches backend getMethodFee()
+const methodFee = useMemo(() => {
   if (submission.submissionMethod === "digital") return TRANSCRIPT_FEE;
   if (submission.submissionMethod === "sealed") return SHIPPING_FEE;
   return 0;
 }, [submission.submissionMethod]);
 
-const methodLabel = submission.submissionMethod === "digital"
-  ? "Transcript Fee (school release)"
-  : submission.submissionMethod === "sealed"
-  ? "Shipping Fee (sealed packet)"
-  : "Method Fee";
+const methodLabel =
+  submission.submissionMethod === "digital"
+    ? "Transcript Fee (school release)"
+    : submission.submissionMethod === "sealed"
+    ? "Shipping Fee (sealed packet)"
+    : "Method Fee";
 
-const evaluationTotal = EVALUATION_FEE + methodFee;
+const evaluationSubtotal = EVALUATION_FEE + methodFee;
 
-  // What should the button charge?
-  // - If evaluation NOT paid: pay methodCost + translation pages (all translation pages currently in package)
-  // - If evaluation paid: pay ONLY unpaid translation pages (supplement)
-  const totalDueNow = isEvalPaid ? translationCostUnpaid : (methodCost + (translationPagesAll * TRANSLATION_FEE_PER_PAGE));
+// Due now must match backend:
+// - If eval NOT paid: evaluation fee + method fee + unpaid translation
+// - If eval paid: unpaid translation only
+const totalDueNow = isEvalPaid
+  ? translationCostUnpaid
+  : (evaluationSubtotal + translationCostUnpaid);
 
-  const canPayInitial = !isEvalPaid;
-  const canPaySupplement = isEvalPaid && translationPagesUnpaid > 0 && typeof onPayAdditionalTranslation === "function";
+const canPayInitial = !isEvalPaid;
+const canPaySupplement =
+  isEvalPaid &&
+  translationPagesUnpaid > 0 &&
+  typeof onPayAdditionalTranslation === "function";
 
   return (
     <div className="bg-gray-50 p-4 mt-2 rounded border">
@@ -65,8 +74,9 @@ const evaluationTotal = EVALUATION_FEE + methodFee;
 
      <p>Evaluation Fee: <strong>${EVALUATION_FEE.toFixed(2)}</strong></p>
     <p>{methodLabel}: <strong>${methodFee.toFixed(2)}</strong></p>
-    <p className="font-semibold">Evaluation subtotal: ${evaluationTotal.toFixed(2)}</p>
-
+    <p className="font-semibold">
+      Evaluation subtotal: ${evaluationSubtotal.toFixed(2)}
+    </p>
 
       <p>
         Translation Fee (${TRANSLATION_FEE_PER_PAGE}/page):{" "}

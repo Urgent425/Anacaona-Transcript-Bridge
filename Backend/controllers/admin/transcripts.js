@@ -1,6 +1,7 @@
 // controllers/admin/transcripts.js
 const Transcript   = require("../../models/Transcript");
 const Institution  = require("../../models/Institution");
+const { signedGetUrl } = require("../../services/r2Storage");
 
 exports.listTranscripts = async (req, res, next) => {
   try {
@@ -76,4 +77,42 @@ exports.rejectTranscript = async (req, res, next) => {
     await t.save();
     res.json({ success: true });
   } catch (e) { next(e); }
+};
+
+   // Download part
+
+exports.downloadStudentDocument = async (req, res, next) => {
+  try {
+    const { id, docIndex } = req.params;
+    const i = Number(docIndex);
+
+    const t = await Transcript.findById(id).select("submissionId documents");
+    if (!t) return res.status(404).json({ error: "Not found" });
+
+    if (!Array.isArray(t.documents) || Number.isNaN(i) || i < 0 || i >= t.documents.length) {
+      return res.status(400).json({ error: "Invalid document index" });
+    }
+
+    const d = t.documents[i];
+
+    // ✅ Preferred: R2 signed URL
+    if (d.key) {
+      const url = await signedGetUrl({ key: d.key });
+      return res.json({ url });
+    }
+
+    // ✅ Legacy fallback: buffer in MongoDB
+    if (d.buffer && d.buffer.length) {
+      res.setHeader("Content-Type", d.mimetype || "application/octet-stream");
+      const safeName = encodeURIComponent(d.filename || `document_${i}`);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}"`);
+      return res.send(d.buffer);
+    }
+
+    return res.status(400).json({
+      error: "Document has no R2 key and no buffer (storage not configured).",
+    });
+  } catch (err) {
+    next(err);
+  }
 };

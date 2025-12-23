@@ -225,6 +225,7 @@ function OfficialUploader({ submissionMongoId, onUploaded }) {
 function OfficialList({ submissionMongoId }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingIdx, setDownloadingIdx] = useState(null);
   const token = localStorage.getItem("token");
 
   const load = async () => {
@@ -246,7 +247,33 @@ function OfficialList({ submissionMongoId }) {
 
   useEffect(() => {
     load();
+    
   }, [submissionMongoId]);
+
+  const downloadOfficial = async (idx) => {
+    try {
+      setDownloadingIdx(idx);
+
+      const res = await fetch(
+        `${API_BASE}/api/institution/submissions/${submissionMongoId}/officials/${idx}/download`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(`Download failed (${res.status}). ${msg}`.trim());
+      }
+
+      const { url } = await res.json();
+      if (!url) throw new Error("Missing signed URL.");
+
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      alert(e.message || "Download failed.");
+    } finally {
+      setDownloadingIdx(null);
+    }
+  };
 
   if (loading) return <div className="text-xs text-slate-500 mt-1">Loading official files…</div>;
   if (!items.length) return <div className="text-xs text-slate-500 mt-1">No official files uploaded yet.</div>;
@@ -255,25 +282,26 @@ function OfficialList({ submissionMongoId }) {
     <ul className="mt-2 space-y-2 text-xs text-slate-700">
       {items.map((f, i) => (
         <li
-          key={`${f.filename}-${i}`}
+          key={`${f._id || f.filename}-${i}`}
           className="flex items-center justify-between rounded-lg bg-slate-50 border border-slate-200 px-3 py-2"
         >
           <span className="truncate" title={f.filename}>
             {f.filename} {f.size ? `(${Math.round(f.size / 1024)} KB)` : ""}
           </span>
-          <a
-            className="underline text-blue-700 hover:text-blue-800 transition-colors"
-            href={`${API_BASE}/api/institution/submissions/${submissionMongoId}/officials/${i}/download`}
-            target="_blank"
-            rel="noreferrer"
+
+          <button
+            className="underline text-blue-700 hover:text-blue-800 transition-colors disabled:opacity-50"
+            onClick={() => downloadOfficial(i)}
+            disabled={downloadingIdx === i}
           >
-            Download
-          </a>
+            {downloadingIdx === i ? "Opening..." : "Download"}
+          </button>
         </li>
       ))}
     </ul>
   );
 }
+
 
 /* ─────────────────────────────────────────────────────────────
    Details drawer (light)
@@ -310,6 +338,27 @@ function DetailsDrawer({ open, onClose, submissionMongoId, onDidUpdate }) {
       setLoading(false);
     }
   };
+
+  const openStudentDoc = async (docIndex) => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(
+      `${API_BASE}/api/institution/submissions/${submissionMongoId}/documents/${docIndex}/download`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`Open failed (${res.status}). ${msg}`.trim());
+    }
+
+    const { url } = await res.json();
+    if (!url) throw new Error("Missing signed URL.");
+    window.open(url, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    alert(e.message || "Open failed.");
+  }
+};
 
   useEffect(() => {
     loadDetails();
@@ -381,7 +430,7 @@ function DetailsDrawer({ open, onClose, submissionMongoId, onDidUpdate }) {
               <div>
                 <div className="font-medium text-sm">Documents</div>
                 <div className="mt-3 space-y-2">
-                  {(sub.documents || []).map((d) => (
+                  {(sub.documents || []).map((d, idx) => (
                     <div
                       key={d._id || d.filename}
                       className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 flex items-start justify-between"
@@ -394,14 +443,32 @@ function DetailsDrawer({ open, onClose, submissionMongoId, onDidUpdate }) {
                         </div>
                       </div>
 
-                      <a
+                      <button
                         className="text-blue-700 underline text-xs ml-3 hover:text-blue-800 transition-colors"
-                        href={`${API_BASE}/api/download/${sub._id}/${encodeURIComponent(d.filename)}`}
-                        target="_blank"
-                        rel="noreferrer"
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem("token");
+                            const res = await fetch(
+                              `${API_BASE}/api/institution/submissions/${submissionMongoId}/documents/${idx}/download`,
+                              { headers: { Authorization: `Bearer ${token}` } }
+                            );
+
+                            if (!res.ok) {
+                              const msg = await res.text().catch(() => "");
+                              throw new Error(`Open failed (${res.status}). ${msg}`.trim());
+                            }
+
+                            const { url } = await res.json();
+                            if (!url) throw new Error("Missing signed URL.");
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          } catch (e) {
+                            alert(e.message || "Open failed.");
+                          }
+                        }}
                       >
                         Open
-                      </a>
+                      </button>
+
                     </div>
                   ))}
                 </div>
