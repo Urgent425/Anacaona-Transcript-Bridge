@@ -69,13 +69,7 @@ function totalPagesOf(files = []) {
 }
 
 function isPaidOf(s) {
-  // tolerate multiple historical flags
-  return (
-    s?.paymentStatus === "paid" ||
-    s?.status === "paid" ||
-    !!s?.paid ||
-    !!s?.locked
-  );
+  return s?.paymentStatus === "paid" || s?.status === "paid" || s?.paid === true;
 }
 
 function receiptUrlOf(s) {

@@ -361,7 +361,8 @@ router.post("/lock-and-pay", async (req, res) => {
       _id: { $in: submissionIds },
       student: studentId,
       locked: false,
-      status: { $in: ["pending"] },
+      status: { $in: ["pending", "unpaid"] }, // allow both if you use both
+      paid: { $ne: true },
     });
 
     if (submissions.length === 0) {
@@ -369,7 +370,7 @@ router.post("/lock-and-pay", async (req, res) => {
     }
 
     const totalPages = submissions.reduce((sum, s) => {
-      const pages = (s.files || []).reduce((fileSum, f) => fileSum + (f.pageCount || 1), 0);
+      const pages = (s.files || []).reduce((fileSum, f) => fileSum + (Number(f.pageCount) || 1), 0);
       return sum + pages;
     }, 0);
 
@@ -427,7 +428,7 @@ router.post("/lock-and-pay", async (req, res) => {
       line_items,
       mode: "payment",
       success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/dashboard`,
+      cancel_url: `${process.env.CLIENT_URL}/payment-cancel?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         type: "translation_only",
         studentId: String(studentId),
@@ -439,10 +440,18 @@ router.post("/lock-and-pay", async (req, res) => {
       },
     });
 
-    // Lock submissions and store session id
+    // Lock submissions and store session id as pending checkout (NOT paid)
     await TranslationRequest.updateMany(
-      { _id: { $in: submissionIds }, student: studentId, locked: false },
-      { $set: { stripeSessionId: session.id, locked: true, status: "locked" } }
+      { _id: { $in: submissionIds }, student: studentId, locked: false, paid: { $ne: true } },
+      {
+        $set: {
+          stripeSessionId: session.id,
+          locked: false,
+          status: "pending",
+          paid: false,
+          paidAt: null,
+        },
+      }
     );
 
     return res.json({ paymentUrl: session.url });
