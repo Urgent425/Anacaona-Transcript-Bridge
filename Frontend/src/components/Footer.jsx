@@ -5,7 +5,7 @@ import { Facebook, Twitter, Instagram } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.25),transparent_80%)] text-slate-200 border-t border-white/5 px-6 py-12 text-sm">
+    <footer className="bg-slate-950 text-slate-200 border-t border-white/5 px-6 py-12 text-sm">
       <div className="max-w-6xl mx-auto grid gap-10 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="text-white font-semibold text-lg">
@@ -47,7 +47,7 @@ export default function Footer() {
           <ul className="space-y-2">
             <li>
               <a
-                href="mailto:support@anacaonabridge.org"
+                href="mailto:onlinesupport@anacaonaservices.org"
                 className="hover:text-white"
               >
                 onlinesupport@anacaonaservices.org
