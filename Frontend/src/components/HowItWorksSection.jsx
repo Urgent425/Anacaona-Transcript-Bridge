@@ -35,7 +35,7 @@ export default function HowItWorksSection() {
           How it works
         </h2>
         <p className="text-slate-400 max-w-2xl mx-auto mt-4 text-base md:text-lg">
-          Anacaona moves your education across borders — securely, and with
+          Anacaona moves your education across borders securely, and with
           respect for Haitian institutions.
         </p>
 

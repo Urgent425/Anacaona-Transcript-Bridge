@@ -28,7 +28,7 @@ export default function SecuritySection() {
           Your documents are sensitive. We treat them like that.
         </h2>
         <p className="text-slate-400 max-w-2xl mx-auto mt-4 text-base">
-          Passports, diplomas, birth certificates — we know what’s at stake.
+          Passports, diplomas, birth certificates we know what’s at stake.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 md:grid-cols-3 text-left">

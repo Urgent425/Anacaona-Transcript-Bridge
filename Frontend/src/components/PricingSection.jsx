@@ -56,7 +56,7 @@ export default function PricingSection() {
           <PricingCard
             icon={<FileText className="w-5 h-5" />}
             title="Transcript Evaluation"
-            price="$50"
+            price="Up to $210"
             unit="/ submission"
             bullets={[
               "We work directly with your school registrar",

@@ -1,8 +1,179 @@
-//src/components/HeroSection.jsx
+// src/components/HeroSection.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Send, FileCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { ShieldCheck, Send, FileCheck, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+
+/**
+ * Easy-to-edit announcements for the hero card.
+ * Later you can fetch these from an API and replace this array.
+ */
+const HERO_UPDATES = [
+  {
+    id: "u1",
+    label: "Announcement",
+    title: "Translation-only service is available",
+    body: "Upload documents for certified translation (French/Spanish → English).",
+    meta: "Updated today",
+    ctaLabel: "Learn more",
+    ctaHref: "#how",
+    isRouterLink: false,
+  },
+  {
+    id: "u2",
+    label: "Partnership",
+    title: "Institution validation workflow is live",
+    body: "Registrars can approve, reject, or request clarification directly in the portal.",
+    meta: "This week",
+    ctaLabel: "How it works",
+    ctaHref: "#how",
+    isRouterLink: false,
+  },
+  {
+    id: "u3",
+    label: "Roadmap",
+    title: "Secure delivery to evaluators",
+    body: "We’re preparing streamlined delivery to credential evaluation partners (e.g., WES).",
+    meta: "Coming soon",
+    ctaLabel: "Get started",
+    ctaHref: "/register",
+    isRouterLink: true,
+  },
+];
+
+function cx(...xs) {
+  return xs.filter(Boolean).join(" ");
+}
+
+function UpdatesCard() {
+  const [index, setIndex] = React.useState(0);
+  const [paused, setPaused] = React.useState(false);
+
+  const items = HERO_UPDATES;
+  const current = items[index];
+
+  const next = React.useCallback(() => {
+    setIndex((i) => (i + 1) % items.length);
+  }, [items.length]);
+
+  const prev = React.useCallback(() => {
+    setIndex((i) => (i - 1 + items.length) % items.length);
+  }, [items.length]);
+
+  React.useEffect(() => {
+    if (paused) return;
+    const t = setInterval(next, 6000);
+    return () => clearInterval(t);
+  }, [paused, next]);
+
+  return (
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_30px_120px_-10px_rgba(251,191,36,0.35)] p-5 text-left"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 border border-white/10">
+              <Megaphone className="w-4 h-4 text-amber-300" />
+            </span>
+            <p className="text-sm font-medium text-white">News & Announcements</p>
+          </div>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Latest updates from Anacaona Transcript Bridge
+          </p>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={prev}
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-slate-200 hover:bg-white/10"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-2.5 py-2 text-slate-200 hover:bg-white/10"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Slide */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={current.id}
+          initial={{ opacity: 0, y: 10, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.985 }}
+          transition={{ duration: 0.25 }}
+          className="rounded-xl bg-white/5 border border-white/10 p-4"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-amber-500/15 text-amber-200 border border-amber-500/20">
+              {current.label}
+            </span>
+            <span className="text-[10px] text-slate-400">{current.meta}</span>
+          </div>
+
+          <div className="mt-3">
+            <div className="text-sm font-semibold text-white leading-snug">{current.title}</div>
+            <div className="mt-1 text-xs text-slate-300 leading-relaxed">{current.body}</div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            {/* Dots */}
+            <div className="flex items-center gap-1.5">
+              {items.map((it, i) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  onClick={() => setIndex(i)}
+                  className={cx(
+                    "h-1.5 rounded-full transition-all",
+                    i === index ? "w-6 bg-amber-300" : "w-2 bg-white/20 hover:bg-white/30"
+                  )}
+                  aria-label={`Go to slide ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* CTA */}
+            {current.isRouterLink ? (
+              <Link
+                to={current.ctaHref}
+                className="text-[11px] font-medium text-amber-200 hover:text-amber-100 underline underline-offset-4"
+              >
+                {current.ctaLabel}
+              </Link>
+            ) : (
+              <a
+                href={current.ctaHref}
+                className="text-[11px] font-medium text-amber-200 hover:text-amber-100 underline underline-offset-4"
+              >
+                {current.ctaLabel}
+              </a>
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="mt-4 text-center">
+        <a href="#updates" className="inline-block text-[11px] text-slate-400 hover:text-slate-300">
+          View all updates
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function HeroSection() {
   return (
@@ -32,9 +203,8 @@ export default function HeroSection() {
             transition={{ duration: 0.5, delay: 0.05 }}
             className="mt-4 text-lg text-slate-300 max-w-lg mx-auto md:mx-0"
           >
-            We work with Haitian institutions to verify and send your official
-            transcripts — for education, immigration, and professional
-            licensing. No travel. No WhatsApp favors.
+            We work with Haitian institutions to verify and send your official transcripts for education,
+            immigration, and professional licensing. No travel. No WhatsApp favors.
           </motion.p>
 
           {/* CTAs */}
@@ -78,63 +248,14 @@ export default function HeroSection() {
           </motion.div>
         </div>
 
-        {/* RIGHT: Mock status card */}
+        {/* RIGHT: Sliding News & Announcements card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
           className="relative mx-auto w-full max-w-sm"
         >
-          <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_30px_120px_-10px_rgba(251,191,36,0.4)] p-5 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-medium text-white">
-                Submission #AUC-2025-1182
-              </p>
-              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                IN REVIEW
-              </span>
-            </div>
-
-            <ul className="space-y-3 text-xs text-slate-300">
-              <li className="flex items-start justify-between">
-                <span className="flex-1">
-                  Transcript uploaded
-                  <span className="block text-slate-500 text-[11px]">
-                    Université d’État d’Haïti • Licence
-                  </span>
-                </span>
-                <span className="ml-2 text-emerald-400 font-medium">
-                  ✔ Verified
-                </span>
-              </li>
-              <li className="flex items-start justify-between">
-                <span className="flex-1">
-                  Official validation by institution
-                  <span className="block text-slate-500 text-[11px]">
-                    Registrar confirmed authenticity
-                  </span>
-                </span>
-                <span className="ml-2 text-yellow-300 font-medium">
-                  ⏳ Pending
-                </span>
-              </li>
-              <li className="flex items-start justify-between">
-                <span className="flex-1">
-                  Sent to WES
-                  <span className="block text-slate-500 text-[11px]">
-                    For education equivalency
-                  </span>
-                </span>
-                <span className="ml-2 text-slate-400 font-medium">—</span>
-              </li>
-            </ul>
-
-            <div className="mt-5 text-center">
-              <span className="inline-block text-[11px] text-slate-400">
-                “Track every step in your dashboard.”
-              </span>
-            </div>
-          </div>
+          <UpdatesCard />
 
           {/* glowing ring accent */}
           <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-400/20 via-transparent to-transparent blur-2xl pointer-events-none" />
