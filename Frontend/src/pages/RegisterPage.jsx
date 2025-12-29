@@ -92,7 +92,7 @@ const RegisterPage = () => {
           <h1 className="mt-4 text-2xl font-semibold text-white tracking-tight">
             Create Your Account
           </h1>
-          <p className="text-slate-400 text-sm mt-2">
+          <p className="text-slate-200 text-sm mt-2">
             Start your evaluation or request certified translation.
           </p>
         </div>
@@ -326,7 +326,7 @@ const RegisterPage = () => {
               {submitting ? "Creating account..." : "Create account"}
             </button>
 
-            <div className="text-center text-sm text-slate-400">
+            <div className="text-center text-sm text-slate-200">
               Already have an account?{" "}
               <Link
                 to="/login"
@@ -338,7 +338,7 @@ const RegisterPage = () => {
           </form>
 
           {/* tiny reassurance */}
-          <p className="text-[11px] text-slate-500 leading-relaxed mt-6 text-center">
+          <p className="text-[11px] text-slate-200 leading-relaxed mt-6 text-center">
             Your institution will confirm authenticity before any transcript is
             released to evaluation services or immigration.
           </p>

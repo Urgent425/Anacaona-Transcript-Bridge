@@ -28,7 +28,7 @@ export default function HowItWorksSection() {
   return (
     <section
       id="how"
-      className="bg-slate-950 text-white border-t border-white/5 py-20 md:py-28 px-6"
+      className="bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.25),transparent_80%)] text-white border-t border-white/5 py-20 md:py-28 px-6"
     >
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">

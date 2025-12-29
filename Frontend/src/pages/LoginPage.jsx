@@ -62,7 +62,7 @@ const LoginPage = () => {
   return (
     <main className="relative min-h-screen flex items-center justify-center bg-slate-950 text-white px-6 py-24">
       {/* subtle radial brand glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.12),transparent_60%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.15),transparent_70%)] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo / heading */}
@@ -75,7 +75,7 @@ const LoginPage = () => {
             Sign in
           </h1>
 
-          <p className="text-slate-400 text-sm mt-2">
+          <p className="text-slate-200 text-sm mt-2">
             Access your dashboard and track your requests.
           </p>
         </div>
@@ -144,12 +144,12 @@ const LoginPage = () => {
           <div className="mt-5 flex flex-col gap-3 text-center text-sm">
             <Link
               to="/forgot-password"
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-200 hover:text-white transition-colors"
             >
               Forgot your password?
             </Link>
 
-            <div className="text-slate-400">
+            <div className="text-slate-200">
               New to Anacaona Transcript Bridge?{" "}
               <Link
                 to="/register"
@@ -161,7 +161,7 @@ const LoginPage = () => {
           </div>
 
           {/* reassurance */}
-          <p className="text-[11px] text-slate-500 leading-relaxed mt-6 text-center">
+          <p className="text-[11px] text-slate-200 leading-relaxed mt-6 text-center">
             We verify transcripts directly with Haitian institutions.
             You always see the status. Nothing is sent without consent.
           </p>

@@ -22,7 +22,7 @@ const items = [
 
 export default function SecuritySection() {
   return (
-    <section className="bg-slate-950 text-white border-t border-white/5 py-20 md:py-24 px-6">
+    <section className="bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.25),transparent_80%)] text-white border-t border-white/5 py-20 md:py-24 px-6">
       <div className="max-w-5xl mx-auto text-center">
         <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
           Your documents are sensitive. We treat them like that.

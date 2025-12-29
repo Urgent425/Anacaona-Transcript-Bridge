@@ -41,7 +41,7 @@ export default function PricingSection() {
   return (
     <section
     id="pricing"
-    className="bg-gradient-to-b from-slate-950 to-slate-900 text-white py-20 md:py-28 px-6 border-t border-white/5">
+    className="bg-gradient-to-b from-slate-950 to-slate-200 text-white py-20 md:py-28 px-6 border-t border-white/5">
       <div className="max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
