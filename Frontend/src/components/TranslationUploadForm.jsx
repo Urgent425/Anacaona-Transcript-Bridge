@@ -219,6 +219,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
     if (!sourceLanguage) return "Please select a source language.";
     if (!targetLanguage) return "Please select a target language.";
     if (!deliveryMethod) return "Please select a delivery method.";
+    if (sourceLanguage === targetLanguage) return "Source language and target language cannot be same.";
     if (documents.length === 0) return "Please upload at least one file.";
 
     if (shippingRequired) {
@@ -334,7 +335,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       setSourceLanguage("");
-      setTargetLanguage("english");
+      setTargetLanguage("");
       setNeedNotary(false);
       setDeliveryMethod("");
 
@@ -387,6 +388,9 @@ export default function TranslationUploadForm({ onSubmitted }) {
                   <option value="">Choose…</option>
                   <option value="french">French</option>
                   <option value="spanish">Spanish</option>
+                  <option value="spanish">English</option>
+                  <option value="spanish">Russian</option>
+                  <option value="spanish">Haitian Creole</option>
                 </select>
               </div>
 
@@ -397,7 +401,12 @@ export default function TranslationUploadForm({ onSubmitted }) {
                   onChange={(e) => setTargetLanguage(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
+                  <option value="">Choose…</option>
                   <option value="english">English</option>
+                  <option value="french">French</option>
+                  <option value="spanish">Spanish</option>
+                  <option value="spanish">Russian</option>
+                  <option value="spanish">Haitian Creole</option>
                 </select>
               </div>
 
