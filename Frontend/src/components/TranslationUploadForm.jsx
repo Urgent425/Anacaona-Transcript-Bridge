@@ -48,7 +48,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
 
   // fields
   const [sourceLanguage, setSourceLanguage] = useState("");
-  const [targetLanguage, setTargetLanguage] = useState("english");
+  const [targetLanguage, setTargetLanguage] = useState("");
   const [needNotary, setNeedNotary] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState("");
 
@@ -388,9 +388,9 @@ export default function TranslationUploadForm({ onSubmitted }) {
                   <option value="">Choose…</option>
                   <option value="french">French</option>
                   <option value="spanish">Spanish</option>
-                  <option value="spanish">English</option>
-                  <option value="spanish">Russian</option>
-                  <option value="spanish">Haitian Creole</option>
+                  <option value="English">English</option>
+                  <option value="Russian">Russian</option>
+                  <option value="Haitian Creole">Haitian Creole</option>
                 </select>
               </div>
 
@@ -405,8 +405,8 @@ export default function TranslationUploadForm({ onSubmitted }) {
                   <option value="english">English</option>
                   <option value="french">French</option>
                   <option value="spanish">Spanish</option>
-                  <option value="spanish">Russian</option>
-                  <option value="spanish">Haitian Creole</option>
+                  <option value="Ruassian">Russian</option>
+                  <option value="Haitian Creole">Haitian Creole</option>
                 </select>
               </div>
 
@@ -837,7 +837,7 @@ export default function TranslationUploadForm({ onSubmitted }) {
                 setDocuments([]);
                 if (fileInputRef.current) fileInputRef.current.value = "";
                 setSourceLanguage("");
-                setTargetLanguage("english");
+                setTargetLanguage("");
                 setNeedNotary(false);
                 setDeliveryMethod("");
                 setError("");
