@@ -1,4 +1,4 @@
-//Backend/routes/stripeWebhook.js
+// //Backend/routes/stripeWebhook.js
 const express = require("express");
 const Stripe = require("stripe");
 const bodyParser = require("body-parser");
@@ -9,8 +9,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 /**
  * Stripe Webhook (Translation Only)
- * IMPORTANT: this route must be mounted BEFORE any express.json() middleware
- * or use app.use('/api/webhooks/stripe', router) with raw body on this route only.
+ * IMPORTANT:
+ * - This route must be mounted BEFORE any express.json() middleware,
+ *   OR mounted with raw body on this route only.
+ *
+ * Example (recommended):
+ *   app.use("/api/webhooks/stripe", require("./routes/stripeWebhook"));
+ *   // but ensure you DO NOT apply express.json() to that same path
  */
 router.post(
   "/webhook",
@@ -39,7 +44,6 @@ router.post(
           const session = event.data.object;
 
           // Guard: Only mark paid when Stripe confirms payment_status === "paid"
-          // (prevents false "paid" for delayed/async flows)
           if (session.payment_status !== "paid") {
             console.log(
               "ℹ️ checkout.session.completed but payment_status is not paid:",
@@ -50,6 +54,7 @@ router.post(
           }
 
           // Expand to get payment_intent + latest_charge for receipt_url
+          // NOTE: amount_total, amount_subtotal, total_details.amount_tax are on the session
           const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
             expand: ["payment_intent", "payment_intent.latest_charge"],
           });
@@ -57,8 +62,16 @@ router.post(
           const pi = fullSession.payment_intent;
           const latestCharge = pi?.latest_charge;
 
-          const amountPaidCents =
+          const totalCents =
             typeof fullSession.amount_total === "number" ? fullSession.amount_total : null;
+
+          const subtotalCents =
+            typeof fullSession.amount_subtotal === "number" ? fullSession.amount_subtotal : null;
+
+          const taxCents =
+            typeof fullSession?.total_details?.amount_tax === "number"
+              ? fullSession.total_details.amount_tax
+              : null;
 
           const currency = (fullSession.currency || "usd").toLowerCase();
           const receiptUrl = latestCharge?.receipt_url || null;
@@ -73,8 +86,14 @@ router.post(
                 status: "locked",
                 locked: true,
 
-                amountPaidCents,
+                // Preserve your existing fields
+                amountPaidCents: totalCents,
                 currency,
+
+                // NEW: tax breakdown (safe even if null)
+                subtotalCents,
+                taxCents,
+                totalCents,
 
                 stripePaymentIntentId: pi?.id || null,
                 stripeChargeId: latestCharge?.id || null,
@@ -125,8 +144,16 @@ router.post(
           const pi = fullSession.payment_intent;
           const latestCharge = pi?.latest_charge;
 
-          const amountPaidCents =
+          const totalCents =
             typeof fullSession.amount_total === "number" ? fullSession.amount_total : null;
+
+          const subtotalCents =
+            typeof fullSession.amount_subtotal === "number" ? fullSession.amount_subtotal : null;
+
+          const taxCents =
+            typeof fullSession?.total_details?.amount_tax === "number"
+              ? fullSession.total_details.amount_tax
+              : null;
 
           const currency = (fullSession.currency || "usd").toLowerCase();
           const receiptUrl = latestCharge?.receipt_url || null;
@@ -139,8 +166,16 @@ router.post(
                 paidAt: new Date(),
                 status: "paid",
                 locked: true,
-                amountPaidCents,
+
+                // Preserve your existing fields
+                amountPaidCents: totalCents,
                 currency,
+
+                // NEW: tax breakdown
+                subtotalCents,
+                taxCents,
+                totalCents,
+
                 stripePaymentIntentId: pi?.id || null,
                 stripeChargeId: latestCharge?.id || null,
                 receiptUrl,

@@ -58,12 +58,16 @@ const transcriptSchema = new mongoose.Schema({
   stripeSessionId:        { type: String, default: null },
   stripePaymentIntentId:  { type: String, default: null },
   stripeChargeId:         { type: String, default: null },
+   // Stripe Tax breakdown (for reporting / reconciliation)
+  subtotalCents: { type: Number, default: null },
+  taxCents:      { type: Number, default: null },
+  totalCents:    { type: Number, default: null },
   receiptUrl:             { type: String, default: null },
   paidAt:                 { type: Date, default: null },
   amountPaidCents:        { type: Number, default: null },
   currency:               { type: String, default: "usd" },
   locked:                 { type: Boolean, default: false }, // optional but recommended
-  paymentStatus:         { type: String, enum: ["pending", "paid"], default: "pending" },
+  paymentStatus: { type: String, enum: ["pending", "unpaid", "paid"], default: "pending" },
   sealedPackageReceived: { type: Boolean, default: false },
   shippingTrackingNumber:{ type: String },
   approver:              ApproverSchema,
@@ -72,7 +76,7 @@ const transcriptSchema = new mongoose.Schema({
   documents: [
   {
     filename:        String,
-    buffer:          Buffer,   // legacy; we will stop writing new buffers
+    buffer:          { type: Buffer, select: false },   // legacy; we will stop writing new buffers
     mimetype:        String,
 
     // ✅ R2 storage (new)

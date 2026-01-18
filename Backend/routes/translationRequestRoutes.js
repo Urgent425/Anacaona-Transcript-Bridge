@@ -1,12 +1,11 @@
-// backend/routes/translationRequestRoutes.js
+// // backend/routes/translationRequestRoutes.js
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const Stripe = require("stripe");
 
 const TranslationRequest = require("../models/TranslationRequest");
 const User = require("../models/User");
-const Stripe = require("stripe");
-
 const { buildKey, uploadBuffer } = require("../services/r2Storage");
 
 const router = express.Router();
@@ -18,6 +17,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const TRANSLATION_FEE_PER_PAGE_CENTS = 2500; // $25 / page
 const NOTARY_FEE_CENTS = 1500;              // $15 flat
 const SHIPPING_FEE_CENTS = 1000;            // $10 flat
+
+/**
+ * Stripe Tax toggle
+ */
+const STRIPE_AUTOMATIC_TAX_ENABLED =
+  String(process.env.STRIPE_AUTOMATIC_TAX || "true").toLowerCase() === "true";
+
+/**
+ * FINAL tax code policy (Tennessee):
+ * Treat translation + notary + shipping coordination as NON-TAXABLE professional services.
+ */
+const NON_TAXABLE_SERVICE_TAX_CODE =
+  process.env.STRIPE_TAX_CODE_NON_TAXABLE_SERVICE || "txcd_10103000";
 
 // ─────────────────────────────────────────────────────────────
 // File upload: memory only (Render-safe) + upload to R2
@@ -88,11 +100,10 @@ function coerceBool(v) {
 
 /**
  * Accepts either:
- * - req.body.shippingAddress as JSON string
+ * - req.body.shippingAddress as JSON string/object
  * - OR flat fields: shipName, shipAddress1, shipCity, shipState, shipZip, shipCountry, shipPhone, shipAddress2
  */
 function parseShippingAddressFromBody(body = {}) {
-  // JSON payload
   if (body.shippingAddress) {
     try {
       const obj = typeof body.shippingAddress === "string"
@@ -101,7 +112,8 @@ function parseShippingAddressFromBody(body = {}) {
 
       if (obj && typeof obj === "object") {
         return {
-          name: obj.name || "",
+          name: obj.name || obj.fullName || "",
+          fullName: obj.fullName || obj.name || "", // backward compatible
           address1: obj.address1 || "",
           address2: obj.address2 || "",
           city: obj.city || "",
@@ -109,16 +121,17 @@ function parseShippingAddressFromBody(body = {}) {
           country: obj.country || "USA",
           zip: obj.zip || "",
           phone: obj.phone || "",
+          email: obj.email || "",
         };
       }
     } catch {
-      // ignore; fall back to flat fields
+      // ignore
     }
   }
 
-  // Flat fields fallback (front-end friendly)
   return {
-    name: body.shipName || body.name || "",
+    name: body.shipName || body.name || body.fullName || "",
+    fullName: body.fullName || body.shipName || body.name || "",
     address1: body.shipAddress1 || body.address1 || "",
     address2: body.shipAddress2 || body.address2 || "",
     city: body.shipCity || body.city || "",
@@ -126,6 +139,7 @@ function parseShippingAddressFromBody(body = {}) {
     country: body.shipCountry || body.country || "USA",
     zip: body.shipZip || body.zip || "",
     phone: body.shipPhone || body.phone || "",
+    email: body.email || "",
   };
 }
 
@@ -134,8 +148,11 @@ function validateUsShippingAddress(addr) {
   if (countryNorm !== "usa") {
     return "Shipping is available only in the United States (USA).";
   }
-  if (!addr.name || !addr.address1 || !addr.city || !addr.state || !addr.zip || !addr.phone) {
-    return "Please provide name, address1, city, state, ZIP code, and phone for shipping.";
+  if (!addr.name && !addr.fullName) {
+    return "Please provide the recipient name for shipping.";
+  }
+  if (!addr.address1 || !addr.city || !addr.state || !addr.zip || !addr.phone) {
+    return "Please provide address1, city, state, ZIP code, and phone for shipping.";
   }
   if (!isValidUsZip(addr.zip)) {
     return "Invalid ZIP code. Use 12345 or 12345-6789 format.";
@@ -170,29 +187,26 @@ router.post("/", upload.array("files"), async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
-
     if (!sourceLanguage || !targetLanguage || !deliveryMethod) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Determine shipping address snapshot (only when required)
+    // Shipping address snapshot (only when required)
     let shippingAddress = null;
 
     if (requiresShipping(deliveryMethod)) {
       const student = await User.findById(studentId).select(
         "firstName lastName email phone address shippingAddress"
       );
-
-      if (!student) {
-        return res.status(400).json({ message: "Student not found" });
-      }
+      if (!student) return res.status(400).json({ message: "Student not found" });
 
       const useSavedAddress = coerceBool(req.body.useSavedAddress);
 
       if (useSavedAddress) {
         if (student.shippingAddress && typeof student.shippingAddress === "object") {
           shippingAddress = {
-            name: student.shippingAddress.name || buildStudentName(student),
+            name: student.shippingAddress.name || student.shippingAddress.fullName || buildStudentName(student),
+            fullName: student.shippingAddress.fullName || student.shippingAddress.name || buildStudentName(student),
             address1: student.shippingAddress.address1 || "",
             address2: student.shippingAddress.address2 || "",
             city: student.shippingAddress.city || "",
@@ -200,10 +214,13 @@ router.post("/", upload.array("files"), async (req, res) => {
             country: student.shippingAddress.country || "USA",
             zip: student.shippingAddress.zip || "",
             phone: student.shippingAddress.phone || student.phone || "",
+            email: student.shippingAddress.email || student.email || "",
           };
         } else {
+          // legacy fallback if student.address is a string
           shippingAddress = {
             name: buildStudentName(student),
+            fullName: buildStudentName(student),
             address1: student.address || "",
             address2: "",
             city: "",
@@ -211,39 +228,40 @@ router.post("/", upload.array("files"), async (req, res) => {
             country: "USA",
             zip: "",
             phone: student.phone || "",
+            email: student.email || "",
           };
         }
 
         const errMsg = validateUsShippingAddress(shippingAddress);
         if (errMsg) {
           return res.status(400).json({
-            message:
-              errMsg +
-              " Please update your saved address or choose “Enter a new address.”",
+            message: errMsg + " Please update your saved address or choose “Enter a new address.”",
             code: "INVALID_SAVED_ADDRESS",
           });
         }
       } else {
         shippingAddress = parseShippingAddressFromBody(req.body);
-        if (!shippingAddress.name) shippingAddress.name = buildStudentName(student);
+        if (!shippingAddress.name && !shippingAddress.fullName) {
+          const nm = buildStudentName(student);
+          shippingAddress.name = nm;
+          shippingAddress.fullName = nm;
+        }
 
         const errMsg = validateUsShippingAddress(shippingAddress);
         if (errMsg) {
           return res.status(400).json({ message: errMsg, code: "INVALID_SHIPPING_ADDRESS" });
         }
-
-        // NOTE: if you want to save to user profile, do it here (optional)
       }
     }
 
-    // Create request first to get requestId/_id for deterministic R2 keys
+    // Create request first (so we can generate deterministic R2 keys)
     const request = new TranslationRequest({
       student: studentId,
       sourceLanguage,
       targetLanguage,
       needNotary: !!needNotary,
       deliveryMethod,
-      shippingAddress, // snapshot
+      shippingAddress,
       files: [],
       status: "pending",
       locked: false,
@@ -277,6 +295,7 @@ router.post("/", upload.array("files"), async (req, res) => {
         pageCount: pageCounts[index] || 1,
         bucket: process.env.R2_BUCKET,
         key,
+        size: file.size || 0,
       });
     }
 
@@ -295,7 +314,6 @@ router.post("/", upload.array("files"), async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 // GET /api/translation-requests/mine
-// Get the logged-in user's translation requests
 // ─────────────────────────────────────────────────────────────
 router.get("/mine", async (req, res) => {
   try {
@@ -313,7 +331,7 @@ router.get("/mine", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 // DELETE /api/translation-requests/:id
-// Delete a translation request (only if not locked/paid)
+// Delete only if not locked/paid
 // ─────────────────────────────────────────────────────────────
 router.delete("/:id", async (req, res) => {
   try {
@@ -322,15 +340,13 @@ router.delete("/:id", async (req, res) => {
     const studentId = auth.studentId;
 
     const doc = await TranslationRequest.findById(req.params.id);
-    if (!doc || doc.student.toString() !== String(studentId)) {
+    if (!doc || String(doc.student) !== String(studentId)) {
       return res.status(403).json({ error: "Forbidden or Not Found" });
     }
 
     const isPaid = !!doc.paid || doc.status === "paid" || doc.status === "completed";
     if (doc.locked || isPaid) {
-      return res.status(400).json({
-        error: "This request is locked/paid and cannot be deleted.",
-      });
+      return res.status(400).json({ error: "This request is locked/paid and cannot be deleted." });
     }
 
     await TranslationRequest.findByIdAndDelete(req.params.id);
@@ -343,7 +359,7 @@ router.delete("/:id", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/translation-requests/lock-and-pay
-// Lock pending translation requests and create Stripe Checkout Session.
+// Create Stripe Checkout Session for selected requests (translation-only)
 // ─────────────────────────────────────────────────────────────
 router.post("/lock-and-pay", async (req, res) => {
   try {
@@ -351,8 +367,7 @@ router.post("/lock-and-pay", async (req, res) => {
     if (auth.error) return res.status(auth.error.code).json(auth.error.body);
     const studentId = auth.studentId;
 
-    const { submissionIds } = req.body;
-
+    const { submissionIds } = req.body || {};
     if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
       return res.status(400).json({ error: "No submissions provided" });
     }
@@ -361,7 +376,7 @@ router.post("/lock-and-pay", async (req, res) => {
       _id: { $in: submissionIds },
       student: studentId,
       locked: false,
-      status: { $in: ["pending", "unpaid"] }, // allow both if you use both
+      status: { $in: ["pending", "unpaid"] },
       paid: { $ne: true },
     });
 
@@ -380,16 +395,20 @@ router.post("/lock-and-pay", async (req, res) => {
 
     const hasNotary = submissions.some((s) => !!s.needNotary);
 
-    const needsShipping = submissions.some((s) => {
+    const needsShip = submissions.some((s) => {
       const dm = normalizeDeliveryMethod(s.deliveryMethod);
       return dm === "hard copy" || dm === "both";
     });
 
+    // FINAL tax codes applied to ALL line items
     const line_items = [
       {
         price_data: {
           currency: "usd",
-          product_data: { name: "Translation Services (per page)" },
+          product_data: {
+            name: "Translation Services (per page)",
+            tax_code: NON_TAXABLE_SERVICE_TAX_CODE,
+          },
           unit_amount: TRANSLATION_FEE_PER_PAGE_CENTS,
         },
         quantity: totalPages,
@@ -400,30 +419,31 @@ router.post("/lock-and-pay", async (req, res) => {
       line_items.push({
         price_data: {
           currency: "usd",
-          product_data: { name: "Notary Fee" },
+          product_data: {
+            name: "Notary Fee",
+            tax_code: NON_TAXABLE_SERVICE_TAX_CODE,
+          },
           unit_amount: NOTARY_FEE_CENTS,
         },
         quantity: 1,
       });
     }
 
-    if (needsShipping) {
+    if (needsShip) {
       line_items.push({
         price_data: {
           currency: "usd",
-          product_data: { name: "Shipping Fee" },
+          product_data: {
+            name: "Shipping Fee",
+            tax_code: NON_TAXABLE_SERVICE_TAX_CODE,
+          },
           unit_amount: SHIPPING_FEE_CENTS,
         },
         quantity: 1,
       });
     }
 
-    const grandTotalCents =
-      totalPages * TRANSLATION_FEE_PER_PAGE_CENTS +
-      (hasNotary ? NOTARY_FEE_CENTS : 0) +
-      (needsShipping ? SHIPPING_FEE_CENTS : 0);
-
-    const session = await stripe.checkout.sessions.create({
+    const sessionPayload = {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
@@ -435,12 +455,21 @@ router.post("/lock-and-pay", async (req, res) => {
         submissionIds: submissionIds.join(","),
         totalPages: String(totalPages),
         hasNotary: String(hasNotary),
-        needsShipping: String(needsShipping),
-        grandTotalCents: String(grandTotalCents),
+        needsShipping: String(needsShip),
       },
-    });
+    };
+
+    if (STRIPE_AUTOMATIC_TAX_ENABLED) {
+      sessionPayload.automatic_tax = { enabled: true };
+      sessionPayload.billing_address_collection = "required";
+      sessionPayload.customer_creation = "always";
+      sessionPayload.tax_id_collection = { enabled: true };
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionPayload);
 
     // Lock submissions and store session id as pending checkout (NOT paid)
+    // RECOMMENDED: lock immediately, then unlock on session.expired/async_failed
     await TranslationRequest.updateMany(
       { _id: { $in: submissionIds }, student: studentId, locked: false, paid: { $ne: true } },
       {
@@ -475,16 +504,20 @@ router.get("/receipt/:sessionId", async (req, res) => {
     const doc = await TranslationRequest.findOne({
       student: studentId,
       stripeSessionId: sessionId,
-    }).select("receiptUrl paid locked status amountPaidCents currency");
+    }).select("receiptUrl paid locked status amountPaidCents currency subtotalCents taxCents totalCents");
 
     if (!doc) return res.status(404).json({ message: "Receipt not found." });
 
     return res.json({
       receiptUrl: doc.receiptUrl || null,
       paid: !!doc.paid || doc.status === "paid" || !!doc.locked,
-      amountPaidCents: doc.amountPaidCents,
-      currency: doc.currency,
+      amountPaidCents: doc.amountPaidCents ?? null,
+      currency: (doc.currency || "usd").toLowerCase(),
       status: doc.status,
+
+      subtotalCents: typeof doc.subtotalCents === "number" ? doc.subtotalCents : null,
+      taxCents: typeof doc.taxCents === "number" ? doc.taxCents : null,
+      totalCents: typeof doc.totalCents === "number" ? doc.totalCents : null,
     });
   } catch (err) {
     console.error(err);
