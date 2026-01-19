@@ -406,8 +406,7 @@ router.post("/lock-and-pay", async (req, res) => {
         price_data: {
           currency: "usd",
           product_data: {
-            name: `Translation Services – Request ${request.requestId}`,
-            description: `Document translation (${translationPages} page(s))`,
+            name: "Translation Services (per page)",
             tax_code: NON_TAXABLE_SERVICE_TAX_CODE,
           },
           unit_amount: TRANSLATION_FEE_PER_PAGE_CENTS,
