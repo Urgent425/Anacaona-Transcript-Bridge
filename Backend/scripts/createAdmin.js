@@ -14,8 +14,8 @@ async function run() {
     console.error("Usage: node createAdmin.js <email> <password> [role]");
     process.exit(1);
   }
-  if (!email.endsWith("@anacaona.org")) {
-    console.error("❌ Email must end with @anacaona.org");
+  if (!email.endsWith("@anacaonaservices.org")) {
+    console.error("❌ Email must end with @anacaonaservices.org");
     process.exit(1);
   }
 

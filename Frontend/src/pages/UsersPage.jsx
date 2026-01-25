@@ -179,7 +179,7 @@ export default function UsersPage() {
       {/* Create admin */}
       <form onSubmit={createUser} className="rounded-xl border bg-white p-4 shadow-sm grid md:grid-cols-5 gap-2">
         <Input placeholder="Full name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} required />
-        <Input placeholder="email@anacaona.org" type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} required />
+        <Input placeholder="email@anacaonaservices.org" type="email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} required />
         <Input placeholder="Password" type="password" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} required />
         <select className="border rounded px-3 py-2 text-sm" value={form.role} onChange={e=>setForm({...form, role:e.target.value})}>
           <option value="Translator">Translator</option>

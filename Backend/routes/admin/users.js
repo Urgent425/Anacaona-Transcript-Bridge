@@ -29,8 +29,8 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "Invalid role" });
   }
   // Optional: restrict domain
-  if (!/@anacaona\.org$/i.test(email)) {
-    return res.status(400).json({ message: "Email must be @anacaona.org" });
+  if (!/@anacaonaservices\.org$/i.test(email)) {
+    return res.status(400).json({ message: "Email must be @anacaonaservices.org" });
   }
 
   const exists = await AdminUser.findOne({ email });

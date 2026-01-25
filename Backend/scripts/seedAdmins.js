@@ -19,7 +19,7 @@ const adminsToSeed = [
 ];
 
 const VALID_ROLES = new Set(["SuperAdmin", "Translator", "Reviewer"]);
-const EMAIL_DOMAIN = /@anacaona\.org$/i; // enforce your domain
+const EMAIL_DOMAIN = /@anacaonaservices\.org$/i; // enforce your domain
 
 (async () => {
   try {
@@ -32,7 +32,7 @@ const EMAIL_DOMAIN = /@anacaona\.org$/i; // enforce your domain
         continue;
       }
       if (!EMAIL_DOMAIN.test(a.email)) {
-        console.warn(`Skip ${a.email}: must be @anacaona.org`);
+        console.warn(`Skip ${a.email}: must be @anacaonaservices.org`);
         continue;
       }
 
