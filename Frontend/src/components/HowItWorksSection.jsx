@@ -19,7 +19,7 @@ const steps = [
   {
     icon: <SendHorizonal className="w-5 h-5" />,
     title: "We deliver it where you need",
-    desc: "WES, immigration, employer, or licensing board.",
+    desc: "Preferred credential evaluator , immigration, employer, or licensing board.",
     note: "Official and trackable.",
   },
 ];
