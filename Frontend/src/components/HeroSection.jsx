@@ -33,7 +33,7 @@ const HERO_UPDATES = [
     id: "u3",
     label: "Roadmap",
     title: "Secure delivery to evaluators",
-    body: "We’re preparing streamlined delivery to credential evaluation partners (e.g., WES).",
+    body: "We’re preparing streamlined delivery to credential evaluation partners.",
     meta: "Coming soon",
     ctaLabel: "Get started",
     ctaHref: "/register",
