@@ -61,7 +61,7 @@ export default function PricingSection() {
             bullets={[
               "We work directly with your school registrar",
               "We confirm authenticity of your record",
-              "We send it where you need (like WES)",
+              "We send it where you need",
             ]}
             cta="Start an evaluation"
           />
