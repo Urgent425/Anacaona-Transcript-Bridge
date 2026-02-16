@@ -6,7 +6,9 @@ import { UserPlus } from "lucide-react";
 const RegisterPage = () => {
   const navigate = useNavigate();
 
-  // Form state
+  // NOTE:
+  // - "role" is what your backend already expects: "student" | "institution"
+  // - "accountType" is UI-only: "student" | "other" | "institution"
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -16,15 +18,16 @@ const RegisterPage = () => {
     phone: "",
     address: "",
     role: "student",
-    institutionId: "",   // added to match usage
-    institutionName: "", // you had these in state
+    institutionId: "",
+    institutionName: "",
     position: "",
+    // Optional: UI hint (backend can ignore safely)
+    clientType: "student", // "student" | "other"
   });
 
-  // Institutions list
+  const [accountType, setAccountType] = useState("student"); // UI selector
   const [institutions, setInstitutions] = useState([]);
 
-  // UI states
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
 
@@ -40,6 +43,29 @@ const RegisterPage = () => {
       });
   }, []);
 
+  // Keep backend role aligned with UI accountType
+  useEffect(() => {
+    if (accountType === "institution") {
+      setForm((prev) => ({
+        ...prev,
+        role: "institution",
+        clientType: "student", // not used for institution; keep stable
+      }));
+      return;
+    }
+
+    // accountType === "student" OR "other" -> backend role is "student"
+    setForm((prev) => ({
+      ...prev,
+      role: "student",
+      clientType: accountType === "other" ? "other" : "student",
+      // If switching away from institution, clear institution-only fields
+      institutionId: "",
+      institutionName: "",
+      position: "",
+    }));
+  }, [accountType]);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -49,23 +75,37 @@ const RegisterPage = () => {
     setErr("");
 
     if (form.password !== form.confirmPassword) {
-        setErr("Passwords do not match.");
-        return;
+      setErr("Passwords do not match.");
+      return;
     }
 
     setSubmitting(true);
 
     try {
+      const payload = { ...form };
+
+      // Safety: force correct role at submit time too
+      if (accountType === "institution") {
+        payload.role = "institution";
+      } else {
+        payload.role = "student";
+      }
+
+      // If not institution, ensure institution-only fields are not sent (optional but cleaner)
+      if (payload.role !== "institution") {
+        delete payload.institutionId;
+        delete payload.position;
+      }
+
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // You were doing alert() + navigate, we'll keep navigate
         navigate("/login");
       } else {
         setErr(data.message || "Registration failed");
@@ -78,13 +118,14 @@ const RegisterPage = () => {
     }
   };
 
+  const isInstitution = accountType === "institution";
+  const isOther = accountType === "other";
+
   return (
     <main className="relative min-h-screen flex items-center justify-center bg-slate-950 text-white px-6 py-24">
-      {/* golden glow background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.12),transparent_60%)] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-xl">
-        {/* Branding / Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-900 font-bold text-[10px] leading-none shadow-[0_15px_40px_rgba(251,191,36,0.45)]">
             ATB
@@ -93,11 +134,14 @@ const RegisterPage = () => {
             Create Your Account
           </h1>
           <p className="text-slate-200 text-sm mt-2">
-            Start your evaluation or request certified translation.
+            {isInstitution
+              ? "Register as a Haitian institution to submit/verify official records."
+              : isOther
+              ? "Register for Translation Only — for individuals and organizations (no student status required)."
+              : "Register as a student for evaluation workflows and optional translation."}
           </p>
         </div>
 
-        {/* Glass card */}
         <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl p-6 shadow-[0_30px_120px_-10px_rgba(251,191,36,0.4)]">
           {err && (
             <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
@@ -106,13 +150,45 @@ const RegisterPage = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Account type (UI) */}
+            <div>
+              <label htmlFor="accountType" className="block text-sm font-medium text-white mb-1">
+                Account Type
+              </label>
+              <select
+                id="accountType"
+                name="accountType"
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value)}
+                className="w-full rounded-lg bg-slate-900/60 border border-white/10 text-white text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/40"
+              >
+                <option value="student">Student (Evaluation)</option>
+                <option value="other">Individual / Organization (Translation Only)</option>
+                <option value="institution">Haitian Institution (Official Records)</option>
+              </select>
+
+              <p className="mt-2 text-[12px] text-slate-200 leading-relaxed">
+                {isInstitution ? (
+                  <>
+                    Choose this only if you are a Haitian school/university staff member submitting or confirming
+                    official academic records.
+                  </>
+                ) : isOther ? (
+                  <>
+                    Not a student? No problem. Choose this for translation-only requests. (Just a different service path.)
+                  </>
+                ) : (
+                  <>
+                    Choose this if you are submitting transcript packages for evaluation workflows (education or immigration).
+                  </>
+                )}
+              </p>
+            </div>
+
             {/* Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="firstName"
-                  className="block text-sm font-medium text-white mb-1"
-                >
+                <label htmlFor="firstName" className="block text-sm font-medium text-white mb-1">
                   First Name
                 </label>
                 <input
@@ -128,10 +204,7 @@ const RegisterPage = () => {
               </div>
 
               <div>
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-white mb-1"
-                >
+                <label htmlFor="lastName" className="block text-sm font-medium text-white mb-1">
                   Last Name
                 </label>
                 <input
@@ -149,10 +222,7 @@ const RegisterPage = () => {
 
             {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-white mb-1"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-white mb-1">
                 Email
               </label>
               <input
@@ -171,10 +241,7 @@ const RegisterPage = () => {
             {/* Password / Confirm */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-white mb-1"
-                >
+                <label htmlFor="password" className="block text-sm font-medium text-white mb-1">
                   Password
                 </label>
                 <input
@@ -191,10 +258,7 @@ const RegisterPage = () => {
               </div>
 
               <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-white mb-1"
-                >
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-white mb-1">
                   Confirm Password
                 </label>
                 <input
@@ -213,10 +277,7 @@ const RegisterPage = () => {
 
             {/* Phone */}
             <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-white mb-1"
-              >
+              <label htmlFor="phone" className="block text-sm font-medium text-white mb-1">
                 Phone Number
               </label>
               <input
@@ -232,10 +293,7 @@ const RegisterPage = () => {
 
             {/* Address */}
             <div>
-              <label
-                htmlFor="address"
-                className="block text-sm font-medium text-white mb-1"
-              >
+              <label htmlFor="address" className="block text-sm font-medium text-white mb-1">
                 Address
               </label>
               <input
@@ -249,34 +307,11 @@ const RegisterPage = () => {
               />
             </div>
 
-            {/* Role */}
-            <div>
-              <label
-                htmlFor="role"
-                className="block text-sm font-medium text-white mb-1"
-              >
-                Role
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full rounded-lg bg-slate-900/60 border border-white/10 text-white text-sm px-3 py-2.5 outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400/40"
-              >
-                <option value="student">Student</option>
-                <option value="institution">Institution</option>
-              </select>
-            </div>
-
             {/* Institution-only fields */}
-            {form.role === "institution" && (
+            {isInstitution && (
               <>
                 <div>
-                  <label
-                    htmlFor="institutionId"
-                    className="block text-sm font-medium text-white mb-1"
-                  >
+                  <label htmlFor="institutionId" className="block text-sm font-medium text-white mb-1">
                     Institution
                   </label>
                   <select
@@ -297,10 +332,7 @@ const RegisterPage = () => {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="position"
-                    className="block text-sm font-medium text-white mb-1"
-                  >
+                  <label htmlFor="position" className="block text-sm font-medium text-white mb-1">
                     Position / Title
                   </label>
                   <input
@@ -316,7 +348,6 @@ const RegisterPage = () => {
               </>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={submitting}
@@ -328,19 +359,19 @@ const RegisterPage = () => {
 
             <div className="text-center text-sm text-slate-200">
               Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-amber-300 hover:text-amber-200 font-medium"
-              >
+              <Link to="/login" className="text-amber-300 hover:text-amber-200 font-medium">
                 Sign in
               </Link>
             </div>
           </form>
 
-          {/* tiny reassurance */}
+          {/* tiny reassurance - make it contextual */}
           <p className="text-[11px] text-slate-200 leading-relaxed mt-6 text-center">
-            Your institution will confirm authenticity before any transcript is
-            released to evaluation services or immigration.
+            {isInstitution
+              ? "Institutions can submit or confirm official records for students when required."
+              : isOther
+              ? "Translation-only requests do not require school verification."
+              : "Your institution will confirm authenticity before any transcript is released to evaluation services or immigration."}
           </p>
         </div>
       </div>

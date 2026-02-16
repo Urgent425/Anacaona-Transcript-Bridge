@@ -1,7 +1,15 @@
 // src/components/HeroSection.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Send, FileCheck, Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ShieldCheck,
+  Send,
+  FileCheck,
+  Megaphone,
+  ChevronLeft,
+  ChevronRight,
+  Languages,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 /**
@@ -11,17 +19,17 @@ import { AnimatePresence, motion } from "framer-motion";
 const HERO_UPDATES = [
   {
     id: "u1",
-    label: "Announcement",
+    label: "Translation",
     title: "Translation-only service is available",
-    body: "Upload documents for certified translation (French/Spanish → English).",
-    meta: "Updated today",
-    ctaLabel: "Learn more",
-    ctaHref: "#how",
-    isRouterLink: false,
+    body: "Certified translation for immigration, education, and official use (French/Spanish → English).",
+    meta: "Available now",
+    ctaLabel: "Start translation",
+    ctaHref: "/register?flow=translation",
+    isRouterLink: true,
   },
   {
     id: "u2",
-    label: "Partnership",
+    label: "Institutions",
     title: "Institution validation workflow is live",
     body: "Registrars can approve, reject, or request clarification directly in the portal.",
     meta: "This week",
@@ -35,8 +43,8 @@ const HERO_UPDATES = [
     title: "Secure delivery to evaluators",
     body: "We’re preparing streamlined delivery to credential evaluation partners.",
     meta: "Coming soon",
-    ctaLabel: "Get started",
-    ctaHref: "/register",
+    ctaLabel: "Start evaluation",
+    ctaHref: "/register?flow=evaluation",
     isRouterLink: true,
   },
 ];
@@ -82,7 +90,7 @@ function UpdatesCard() {
             <p className="text-sm font-medium text-white">News & Announcements</p>
           </div>
           <p className="mt-1 text-[11px] text-slate-400">
-            Latest updates from Anacaona Transcript Bridge
+            Updates on translation, institutions, and evaluation delivery
           </p>
         </div>
 
@@ -190,21 +198,23 @@ export default function HeroSection() {
             transition={{ duration: 0.4 }}
             className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-white"
           >
-            Get your Haitian transcripts{" "}
+            Haitian transcripts,{" "}
             <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">
-              recognized abroad
+              verified & delivered
             </span>
-            .
+            {" "}
+            — plus certified translation.
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.05 }}
-            className="mt-4 text-lg text-slate-300 max-w-lg mx-auto md:mx-0"
+            className="mt-4 text-lg text-slate-300 max-w-xl mx-auto md:mx-0"
           >
-            We work with Haitian institutions to verify and send your official transcripts for education,
-            immigration, and professional licensing. No travel. No WhatsApp favors.
+            Use Anacaona Transcript Bridge to request <span className="text-white/90 font-medium">translation-only</span>{" "}
+            (French/Spanish → English) or start the <span className="text-white/90 font-medium">institution-verified transcript workflow</span>{" "}
+            for education, immigration, and professional licensing.
           </motion.p>
 
           {/* CTAs */}
@@ -215,19 +225,20 @@ export default function HeroSection() {
             className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start"
           >
             <Link
-              to="/register"
+              to="/register?flow=evaluation"
               className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-900 bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 shadow-[0_20px_60px_-10px_rgba(251,191,36,0.5)] hover:shadow-[0_30px_80px_-10px_rgba(251,191,36,0.7)] transition-shadow"
             >
               <Send className="w-4 h-4 mr-2" />
-              Get Started
+              Start Evaluation
             </Link>
 
-            <a
-              href="#how"
+            <Link
+              to="/register?flow=translation"
               className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-200 border border-white/20 hover:bg-white/5 transition-colors"
             >
-              How it works
-            </a>
+              <Languages className="w-4 h-4 mr-2" />
+              Translation Only
+            </Link>
           </motion.div>
 
           {/* trust badges */}
@@ -239,11 +250,15 @@ export default function HeroSection() {
           >
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Encrypted & institution-approved</span>
+              <span>Secure, encrypted document handling</span>
             </div>
             <div className="flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-amber-400" />
-              <span>Built for Haitian students</span>
+              <span>Institution-approved records when required</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Languages className="w-4 h-4 text-amber-400" />
+              <span>Certified translation (FR/ES → EN)</span>
             </div>
           </motion.div>
         </div>
@@ -256,8 +271,6 @@ export default function HeroSection() {
           className="relative mx-auto w-full max-w-sm"
         >
           <UpdatesCard />
-
-          {/* glowing ring accent */}
           <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-400/20 via-transparent to-transparent blur-2xl pointer-events-none" />
         </motion.div>
       </div>
