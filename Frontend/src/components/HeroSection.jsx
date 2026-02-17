@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
+  Award,        // <-- ADD THIS
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -212,10 +213,15 @@ export default function HeroSection() {
             transition={{ duration: 0.5, delay: 0.05 }}
             className="mt-4 text-lg text-slate-300 max-w-xl mx-auto md:mx-0"
           >
-            Use Anacaona Transcript Bridge to request <span className="text-white/90 font-medium">translation-only</span>{" "}
-            (French/Spanish → English) or start the <span className="text-white/90 font-medium">institution-verified transcript workflow</span>{" "}
+            Use Anacaona Transcript Bridge to request{" "}
+            <span className="text-white/90 font-medium">ATA-member certified translation</span>{" "}
+            (French/Spanish → English) or start the{" "}
+            <span className="text-white/90 font-medium">
+              institution-verified transcript workflow
+            </span>{" "}
             for education, immigration, and professional licensing.
           </motion.p>
+
 
           {/* CTAs */}
           <motion.div
@@ -252,15 +258,23 @@ export default function HeroSection() {
               <ShieldCheck className="w-4 h-4 text-amber-400" />
               <span>Secure, encrypted document handling</span>
             </div>
+
             <div className="flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-amber-400" />
               <span>Institution-approved records when required</span>
             </div>
+
             <div className="flex items-center gap-2">
               <Languages className="w-4 h-4 text-amber-400" />
               <span>Certified translation (FR/ES → EN)</span>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>Member, American Translators Association (ATA)</span>
+            </div>
           </motion.div>
+
         </div>
 
         {/* RIGHT: Sliding News & Announcements card */}
