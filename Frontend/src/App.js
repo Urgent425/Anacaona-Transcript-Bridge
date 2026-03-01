@@ -18,6 +18,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Dashboard from "./pages/Dashboard";
 import StudentDashboard from "./pages/StudentDashboard";
 import InstitutionDashboard from "./pages/InstitutionDashboard";
+import TranslationLandingPage from "./pages/TranslationLandingPage";
 
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
@@ -139,6 +140,13 @@ export default function App() {
               </GuestOnlyRoute>
             }
           />
+           <Route
+              path="/certified-translation"
+              element={
+              <GuestOnlyRoute>
+                <TranslationLandingPage />
+                </GuestOnlyRoute>}
+            />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
