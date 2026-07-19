@@ -115,6 +115,23 @@ export default function SubmissionDetailPage() {
 
 
 
+  const downloadIdentityDocument = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const apiUrl = `${process.env.REACT_APP_API_URL}/api/admin/transcripts/${id}/identity-document/download`;
+      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(`Download failed (${res.status}). ${msg}`.trim());
+      }
+      const { url } = await res.json();
+      if (!url) throw new Error("Missing signed URL.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      alert(e.message || "Download failed.");
+    }
+  };
+
   const downloadAll = async () => {
   if (!sub?.documents?.length) return;
 
@@ -305,6 +322,67 @@ export default function SubmissionDetailPage() {
             <div className="text-xs text-slate-500">{totalPages} pages total</div>
           </div>
         </section>
+
+        {/* OFFICIAL DOCUMENT REQUEST DETAILS (state institutions only) */}
+        {(sub.requestType === "official_document_request" ||
+          sub.documentType ||
+          sub.documentCategory ||
+          sub.identityDocument?.key) && (
+          <section className="rounded-xl bg-white ring-1 ring-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-800">Official Document Request Details</h3>
+              <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {sub.documentCategory} · {sub.documentType}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <div className="text-xs uppercase text-slate-500">Legal Name</div>
+                <div className="mt-1 text-slate-900 font-medium">
+                  {sub.applicantIdentity?.legalName || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-500">Date of Birth</div>
+                <div className="mt-1 text-slate-900 font-medium">
+                  {sub.applicantIdentity?.dateOfBirth || "—"}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-slate-500">National ID / Passport #</div>
+                <div className="mt-1 text-slate-900 font-medium">
+                  {sub.applicantIdentity?.idNumber || "—"}
+                </div>
+              </div>
+            </div>
+
+            {sub.notes && (
+              <div className="mt-4">
+                <div className="text-xs uppercase text-slate-500">Notes</div>
+                <div className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{sub.notes}</div>
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+              <div className="text-xs text-amber-800">
+                <div className="font-medium">Government ID on file</div>
+                <div>{sub.identityDocument?.filename || "No ID uploaded"}</div>
+              </div>
+              {sub.identityDocument?.key && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={downloadIdentityDocument}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  View ID
+                </Button>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ACTIONS BAR */}
         <section className="rounded-xl bg-white ring-1 ring-slate-200 shadow-sm p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

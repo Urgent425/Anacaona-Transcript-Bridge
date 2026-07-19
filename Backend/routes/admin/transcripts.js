@@ -14,6 +14,9 @@ router.get("/:id", ctrl.getTranscript);           // ← add
 // GET /api/admin/transcripts/:id/documents/:docIndex/download
 router.get("/:id/documents/:docIndex/download", ctrl.downloadStudentDocument);
 
+// GET /api/admin/transcripts/:id/identity-document/download
+router.get("/:id/identity-document/download", ctrl.downloadIdentityDocument);
+
 router.patch("/:id/assign", ctrl.assignTranscript);
 router.post("/:id/approve", ctrl.approveTranscript); // ← add
 router.post("/:id/reject",  ctrl.rejectTranscript);  // ← add

@@ -3,6 +3,7 @@ const express = require("express");
 const Stripe = require("stripe");
 const mongoose = require("mongoose");
 const Transcript = require("../models/Transcript");
+const { getDocumentRequestPriceCents } = require("../config/documentRequestPricing");
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -47,20 +48,28 @@ router.post(
             );
             break;
           }
-          await handleEvalPaidSession(session.id);
+          if (session?.metadata?.type === "document_request_total") {
+            await handleDocumentRequestTotalPaidSession(session.id);
+          } else {
+            await handleEvalPaidSession(session.id);
+          }
           break;
         }
 
         case "checkout.session.async_payment_succeeded": {
           const session = event.data.object;
-          await handleEvalPaidSession(session.id);
+          if (session?.metadata?.type === "document_request_total") {
+            await handleDocumentRequestTotalPaidSession(session.id);
+          } else {
+            await handleEvalPaidSession(session.id);
+          }
           break;
         }
 
         case "checkout.session.expired": {
           const session = event.data.object;
 
-          const result = await Transcript.updateOne(
+          const result = await Transcript.updateMany(
             { stripeSessionId: session.id, paymentStatus: { $ne: "paid" } },
             {
               $set: { locked: false, paymentStatus: "pending" }, // schema-safe
@@ -78,7 +87,7 @@ router.post(
             }
           );
 
-          console.log("🟡 Eval session expired; unlocked if matched:", session.id, result);
+          console.log("🟡 Session expired; unlocked if matched:", session.id, result);
           break;
         }
 
@@ -100,8 +109,8 @@ async function handleEvalPaidSession(sessionId) {
   });
 
   const metaType = fullSession?.metadata?.type;
-  if (metaType && metaType !== "evaluation") {
-    console.log("ℹ️ Ignoring non-evaluation session:", sessionId, metaType);
+  if (metaType && metaType !== "evaluation" && metaType !== "document_request") {
+    console.log("ℹ️ Ignoring unrelated session:", sessionId, metaType);
     return;
   }
 
@@ -186,6 +195,58 @@ async function handleEvalPaidSession(sessionId) {
       metadata: fullSession.metadata,
     });
   }
+}
+
+async function handleDocumentRequestTotalPaidSession(sessionId) {
+  const fullSession = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent", "payment_intent.latest_charge"],
+  });
+
+  const pi = fullSession.payment_intent;
+  const charge = pi?.latest_charge;
+  const receiptUrl = charge?.receipt_url || null;
+  const currency = (fullSession.currency || "usd").toLowerCase();
+
+  const idsRaw = String(fullSession?.metadata?.transcriptMongoIds || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const ids = idsRaw
+    .filter((id) => mongoose.Types.ObjectId.isValid(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+
+  if (ids.length === 0) {
+    console.warn("⚠️ document_request_total session had no valid transcriptMongoIds:", sessionId);
+    return;
+  }
+
+  const submissions = await Transcript.find({ _id: { $in: ids } }).select(
+    "documentCategory documentType"
+  );
+
+  // Each request keeps its own accurate price, even though they were paid together.
+  const bulkOps = submissions.map((sub) => ({
+    updateOne: {
+      filter: { _id: sub._id },
+      update: {
+        $set: {
+          paymentStatus: "paid",
+          locked: true,
+          paidAt: new Date(),
+          stripeSessionId: fullSession.id,
+          stripePaymentIntentId: pi?.id || null,
+          stripeChargeId: charge?.id || null,
+          receiptUrl,
+          amountPaidCents: getDocumentRequestPriceCents(sub.documentCategory, sub.documentType),
+          currency,
+        },
+      },
+    },
+  }));
+
+  const result = bulkOps.length ? await Transcript.bulkWrite(bulkOps) : null;
+  console.log("✅ Document request TOTAL webhook update result:", result, "session:", fullSession.id);
 }
 
 module.exports = router;

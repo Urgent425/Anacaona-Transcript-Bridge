@@ -360,6 +360,25 @@ function DetailsDrawer({ open, onClose, submissionMongoId, onDidUpdate }) {
   }
 };
 
+  const openIdentityDocument = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `${API_BASE}/api/institution/submissions/${submissionMongoId}/identity-document/download`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!res.ok) {
+        const msg = await res.text().catch(() => "");
+        throw new Error(`Open failed (${res.status}). ${msg}`.trim());
+      }
+      const { url } = await res.json();
+      if (!url) throw new Error("Missing signed URL.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      alert(e.message || "Open failed.");
+    }
+  };
+
   useEffect(() => {
     loadDetails();
   }, [open, submissionMongoId]);
@@ -426,6 +445,40 @@ function DetailsDrawer({ open, onClose, submissionMongoId, onDidUpdate }) {
                 <Info label="Purpose" value={sub?.purpose || "—"} />
                 <Info label="Created" value={created} />
               </div>
+
+              {sub.requestType === "official_document_request" && (
+                <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-4 space-y-3">
+                  <div className="text-xs font-semibold text-indigo-800 uppercase tracking-wide">
+                    Official Document Request
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Info label="Category" value={sub.documentCategory || "—"} />
+                    <Info label="Document Type" value={sub.documentType || "—"} />
+                    <Info label="Legal Name" value={sub.applicantIdentity?.legalName || "—"} />
+                    <Info label="Date of Birth" value={sub.applicantIdentity?.dateOfBirth || "—"} />
+                    <Info label="National ID / Passport #" value={sub.applicantIdentity?.idNumber || "—"} />
+                  </div>
+                  {sub.notes && (
+                    <div>
+                      <div className="text-[11px] text-slate-500">Notes</div>
+                      <div className="text-sm text-slate-900 whitespace-pre-wrap">{sub.notes}</div>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between rounded-lg bg-white border border-indigo-200 px-3 py-2">
+                    <div className="text-xs text-slate-700">
+                      Government ID: <span className="font-medium">{sub.identityDocument?.filename || "Not uploaded"}</span>
+                    </div>
+                    {sub.identityDocument?.key && (
+                      <button
+                        className="text-blue-700 underline text-xs hover:text-blue-800 transition-colors"
+                        onClick={openIdentityDocument}
+                      >
+                        View ID
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <div className="font-medium text-sm">Documents</div>
@@ -875,7 +928,9 @@ export default function InstitutionDashboard() {
 
                           <Pill variant="neutral">
                             <span className="uppercase tracking-wide text-[10px] text-slate-700">
-                              {s.purpose || "—"}
+                              {s.requestType === "official_document_request"
+                                ? (s.documentType || "Document Request")
+                                : (s.purpose || "—")}
                             </span>
                           </Pill>
                         </div>

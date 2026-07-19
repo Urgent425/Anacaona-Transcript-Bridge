@@ -1,8 +1,9 @@
 //scr/pages/StudentDashboard
 import React, { useState } from "react";
-import { Info, FileText, Languages, ArrowRight, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Info, FileText, Languages, ArrowRight, HelpCircle, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import EvaluationSection from "../components/EvaluationSection";
 import TranslationSection from "../components/TranslationSection";
+import DocumentRequestSection from "../components/DocumentRequestSection";
 import { useAuth } from "../context/AuthContext";
 
 export default function StudentDashboard() {
@@ -109,7 +110,7 @@ export default function StudentDashboard() {
 
         <InfoBanner />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <OverviewCard
             icon={<FileText className="w-5 h-5" />}
             title="Evaluation Submission"
@@ -135,6 +136,19 @@ export default function StudentDashboard() {
             cta="Start Translation"
             onClick={() => setCurrentSection("translation")}
           />
+
+          <OverviewCard
+            icon={<ShieldCheck className="w-5 h-5" />}
+            title="Official Document Request"
+            desc="Request an official document from a state institution (Archives Nationales, DCPJ, OAVCT, DGI, and others)."
+            bullets={[
+              "Choose a document category and type",
+              "Verify your identity with a government ID",
+              "We assign your request to the right institution",
+            ]}
+            cta="Start Document Request"
+            onClick={() => setCurrentSection("documentRequest")}
+          />
         </div>
 
         <HelpAccordion />
@@ -147,7 +161,11 @@ export default function StudentDashboard() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">
-          {currentSection === "evaluation" ? "Evaluation Submission" : "Translation Only"}
+          {currentSection === "evaluation"
+            ? "Evaluation Submission"
+            : currentSection === "documentRequest"
+            ? "Official Document Request"
+            : "Translation Only"}
         </h2>
 
         <button
@@ -160,6 +178,7 @@ export default function StudentDashboard() {
 
       {currentSection === "evaluation" && <EvaluationSection />}
       {currentSection === "translation" && <TranslationSection />}
+      {currentSection === "documentRequest" && <DocumentRequestSection />}
     </div>
   );
 }

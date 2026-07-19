@@ -81,6 +81,24 @@ exports.rejectTranscript = async (req, res, next) => {
 
    // Download part
 
+exports.downloadIdentityDocument = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const t = await Transcript.findById(id).select("identityDocument requestType");
+    if (!t) return res.status(404).json({ error: "Not found" });
+
+    if (!t.identityDocument || !t.identityDocument.key) {
+      return res.status(404).json({ error: "No identity document on file for this submission" });
+    }
+
+    const url = await signedGetUrl({ key: t.identityDocument.key });
+    return res.json({ url });
+  } catch (e) {
+    next(e);
+  }
+};
+
 exports.downloadStudentDocument = async (req, res, next) => {
   try {
     const { id, docIndex } = req.params;

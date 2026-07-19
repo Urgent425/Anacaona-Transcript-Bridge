@@ -53,6 +53,28 @@ const transcriptSchema = new mongoose.Schema({
   student:               { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   submissionMethod:      { type: String, enum: ["sealed", "digital"], required: true },
   purpose:               { type: String, enum: ["education", "immigration"] },
+
+  // ── Official Document Requests (state institutions) ──
+  // Existing university/evaluation submissions are unaffected: they simply
+  // keep the default "academic_evaluation" and leave the fields below empty.
+  requestType:           { type: String, enum: ["academic_evaluation", "official_document_request"], default: "academic_evaluation" },
+  documentCategory:      { type: String, enum: ["academic", "civil", "professional", "government"], default: null },
+  documentType:          { type: String, default: null },
+  notes:                 { type: String, default: "" },
+  applicantIdentity: {
+    legalName:    { type: String, default: "" },
+    dateOfBirth:  { type: String, default: "" },
+    idNumber:     { type: String, default: "" },
+  },
+  identityDocument: {
+    filename:   String,
+    mimetype:   String,
+    bucket:     { type: String, default: null },
+    key:        { type: String, default: null },
+    size:       Number,
+    uploadedAt: { type: Date, default: Date.now },
+  },
+
   approvalStatus:        { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   finalStatus:           { type: String, enum: ["awaiting_shipping", "in_transit", "completed"], default: "awaiting_shipping" },
   stripeSessionId:        { type: String, default: null },

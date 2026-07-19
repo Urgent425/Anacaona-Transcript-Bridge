@@ -39,6 +39,7 @@ app.use("/api/transcripts", require("./routes/transcriptRoutes"));
 app.use("/api/institution", require("./routes/institutionRoutes"));
 app.use("/api/institutions", require("./routes/institutions"));
 app.use("/api/transcripts", require("./routes/addDocumentsRoute"));
+app.use("/api/document-requests", require("./routes/documentRequestRoutes"));
 app.use("/api/translation-requests", require("./routes/translationRequestRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 

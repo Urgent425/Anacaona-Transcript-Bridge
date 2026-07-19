@@ -115,6 +115,11 @@ router.get("/submissions", async (req, res, next) => {
           updatedAt: 1,
           submissionMethod: 1,
 
+          // Official Document Request fields (state institutions)
+          requestType: 1,
+          documentCategory: 1,
+          documentType: 1,
+
           "student._id": 1,
           "student.firstName": 1,
           "student.lastName": 1,
@@ -168,6 +173,10 @@ router.get("/submissions", async (req, res, next) => {
       submissionMethod: row.submissionMethod,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+
+      requestType: row.requestType || "academic_evaluation",
+      documentCategory: row.documentCategory || null,
+      documentType: row.documentType || null,
 
       officialUploadsCount:
         typeof row.officialUploadsCount === "number" ? row.officialUploadsCount : 0,
@@ -537,6 +546,31 @@ router.get("/submissions/:id/documents/:idx/download", async (req, res, next) =>
     return res.status(410).json({
       message: "Document not available (missing storage key). Re-upload required.",
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/institution/submissions/:id/identity-document/download
+// Download the applicant's government ID (Official Document Requests only)
+router.get("/submissions/:id/identity-document/download", async (req, res, next) => {
+  try {
+    const instId = req.institution._id;
+    const subId = req.params.id;
+    if (!ensureObjectId(res, subId)) return;
+
+    const sub = await Transcript.findOne({
+      _id: subId,
+      assignedInstitution: instId,
+    }).select("identityDocument requestType");
+
+    if (!sub) return res.status(404).json({ message: "Not found" });
+    if (!sub.identityDocument || !sub.identityDocument.key) {
+      return res.status(404).json({ message: "No identity document on file" });
+    }
+
+    const url = await signedGetUrl({ key: sub.identityDocument.key });
+    return res.json({ url });
   } catch (err) {
     next(err);
   }

@@ -3,6 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const Stripe = require("stripe");
 const Transcript = require("../models/Transcript");
+const { getDocumentRequestPriceCents } = require("../config/documentRequestPricing");
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -22,6 +23,7 @@ const STRIPE_AUTOMATIC_TAX_ENABLED =
 const TAX_CODE_EVALUATION = process.env.STRIPE_TAX_CODE_EVALUATION || null;
 const TAX_CODE_TRANSLATION = process.env.STRIPE_TAX_CODE_TRANSLATION || null;
 const TAX_CODE_METHOD_FEE = process.env.STRIPE_TAX_CODE_METHOD_FEE || null;
+const TAX_CODE_DOCUMENT_REQUEST = process.env.STRIPE_TAX_CODE_DOCUMENT_REQUEST || null;
 
 function requireStudentId(req) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -179,6 +181,177 @@ router.post("/create-evaluation-checkout-session", async (req, res) => {
 });
 
 /**
+ * POST /api/payments/create-document-request-checkout-session
+ * Official Document Requests (state institutions) — one price per document type.
+ */
+router.post("/create-document-request-checkout-session", async (req, res) => {
+  try {
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
+
+    const { submissionId } = req.body;
+    if (!submissionId) return res.status(400).json({ error: "Submission ID is required" });
+
+    const submission = await Transcript.findOne({
+      submissionId,
+      student: studentId,
+      requestType: "official_document_request",
+    });
+    if (!submission) return res.status(404).json({ error: "Document request not found" });
+
+    if (submission.paymentStatus === "paid") {
+      return res.status(400).json({ error: "This request is already paid." });
+    }
+
+    // Price is computed server-side from the stored category/type — never trust
+    // a client-supplied amount.
+    const priceCents = getDocumentRequestPriceCents(
+      submission.documentCategory,
+      submission.documentType
+    );
+
+    const line_items = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${submission.documentType || "Document"} Request Fee (${submission.submissionId})`,
+            description: submission.documentCategory
+              ? `${submission.documentCategory} document request`
+              : undefined,
+            ...maybeTaxCode(TAX_CODE_DOCUMENT_REQUEST),
+          },
+          unit_amount: priceCents,
+        },
+        quantity: 1,
+      },
+    ];
+
+    const sessionPayload = {
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items,
+
+      success_url: `${process.env.CLIENT_URL}/payment-success-eval?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/student-dashboard`,
+
+      metadata: {
+        type: "document_request",
+        submissionId: String(submission.submissionId),
+        transcriptMongoId: String(submission._id),
+        studentId: String(studentId),
+        documentCategory: String(submission.documentCategory || ""),
+        documentType: String(submission.documentType || ""),
+        priceCents: String(priceCents),
+      },
+    };
+
+    if (STRIPE_AUTOMATIC_TAX_ENABLED) {
+      sessionPayload.automatic_tax = { enabled: true };
+      sessionPayload.billing_address_collection = "required";
+      sessionPayload.customer_creation = "always";
+      sessionPayload.tax_id_collection = { enabled: true };
+    }
+
+    const idempotencyKey = `docreq_${submission._id}_${submission.paymentStatus}_${priceCents}`;
+    const session = await stripe.checkout.sessions.create(sessionPayload, {
+      idempotencyKey,
+    });
+
+    submission.stripeSessionId = session.id;
+    submission.locked = false;
+    await submission.save();
+
+    return res.json({ url: session.url, priceCents });
+  } catch (err) {
+    console.error("create-document-request-checkout-session error:", err);
+    return res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
+
+/**
+ * POST /api/payments/create-document-requests-total-checkout-session
+ * Pays for every unpaid Official Document Request the student has, in one session.
+ */
+router.post("/create-document-requests-total-checkout-session", async (req, res) => {
+  try {
+    const auth = requireStudentId(req);
+    if (auth.error) return res.status(auth.error.code).json(auth.error.body);
+    const studentId = auth.studentId;
+
+    const unpaid = await Transcript.find({
+      student: studentId,
+      requestType: "official_document_request",
+      paymentStatus: { $ne: "paid" },
+    });
+
+    if (unpaid.length === 0) {
+      return res.status(400).json({ error: "No unpaid document requests found." });
+    }
+
+    const line_items = unpaid.map((sub) => {
+      const priceCents = getDocumentRequestPriceCents(sub.documentCategory, sub.documentType);
+      return {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `${sub.documentType || "Document"} Request Fee (${sub.submissionId})`,
+            description: sub.documentCategory ? `${sub.documentCategory} document request` : undefined,
+            ...maybeTaxCode(TAX_CODE_DOCUMENT_REQUEST),
+          },
+          unit_amount: priceCents,
+        },
+        quantity: 1,
+      };
+    });
+
+    const transcriptMongoIds = unpaid.map((s) => String(s._id));
+    const submissionIds = unpaid.map((s) => String(s.submissionId));
+
+    const sessionPayload = {
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items,
+
+      success_url: `${process.env.CLIENT_URL}/payment-success-eval?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/student-dashboard`,
+
+      metadata: {
+        type: "document_request_total",
+        studentId: String(studentId),
+        transcriptMongoIds: transcriptMongoIds.join(","),
+        submissionIds: submissionIds.join(","),
+      },
+    };
+
+    if (STRIPE_AUTOMATIC_TAX_ENABLED) {
+      sessionPayload.automatic_tax = { enabled: true };
+      sessionPayload.billing_address_collection = "required";
+      sessionPayload.customer_creation = "always";
+      sessionPayload.tax_id_collection = { enabled: true };
+    }
+
+    const idempotencyKey = `docreq_total_${studentId}_${transcriptMongoIds.join("-")}`;
+    const session = await stripe.checkout.sessions.create(sessionPayload, {
+      idempotencyKey,
+    });
+
+    // Link the session to each request so the webhook can find them even if
+    // metadata parsing ever fails, and so "already paid" checks stay accurate.
+    await Transcript.updateMany(
+      { _id: { $in: unpaid.map((s) => s._id) } },
+      { $set: { stripeSessionId: session.id, locked: false } }
+    );
+
+    return res.json({ url: session.url, count: unpaid.length });
+  } catch (err) {
+    console.error("create-document-requests-total-checkout-session error:", err);
+    return res.status(500).json({ error: "Failed to create checkout session" });
+  }
+});
+
+/**
  * GET /api/payments/evaluation-receipt/:sessionId
  */
 router.get("/evaluation-receipt/:sessionId", async (req, res) => {
@@ -197,8 +370,39 @@ router.get("/evaluation-receipt/:sessionId", async (req, res) => {
     if (!metaStudentId || String(metaStudentId) !== String(studentId)) {
       return res.status(403).json({ error: "Forbidden" });
     }
-    if (metaType && metaType !== "evaluation") {
-      return res.status(400).json({ error: "Not an evaluation session" });
+    if (metaType && metaType !== "evaluation" && metaType !== "document_request" && metaType !== "document_request_total") {
+      return res.status(400).json({ error: "Not a recognized payment session" });
+    }
+
+    if (metaType === "document_request_total") {
+      const docs = await Transcript.find({
+        student: studentId,
+        stripeSessionId: sessionId,
+      }).select("receiptUrl paymentStatus locked amountPaidCents currency");
+
+      if (docs.length === 0) {
+        return res.json({
+          receiptUrl: null,
+          paid: false,
+          locked: false,
+          amountPaidCents: null,
+          currency: "usd",
+          pending: true,
+          message: "Awaiting webhook confirmation. Please refresh in a few seconds.",
+        });
+      }
+
+      const anyPaid = docs.some((d) => d.paymentStatus === "paid");
+      const totalCents = docs.reduce((sum, d) => sum + (Number(d.amountPaidCents) || 0), 0);
+
+      return res.json({
+        receiptUrl: docs.find((d) => d.receiptUrl)?.receiptUrl || null,
+        paid: anyPaid,
+        locked: docs.every((d) => d.locked),
+        amountPaidCents: anyPaid ? totalCents : null,
+        currency: (docs[0].currency || "usd").toLowerCase(),
+        count: docs.length,
+      });
     }
 
     const doc = await Transcript.findOne({

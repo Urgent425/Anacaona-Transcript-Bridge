@@ -181,7 +181,13 @@ export default function AdminSubmissionsTable({
 
                 {/* PURPOSE */}
                 <td className="align-top px-4 py-4 whitespace-nowrap">
-                  <PurposeChip purpose={sub.purpose} />
+                  {sub.requestType === "official_document_request" ? (
+                    <span className="inline-flex items-center rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 text-[11px] font-medium">
+                      {sub.documentType || "Document Request"}
+                    </span>
+                  ) : (
+                    <PurposeChip purpose={sub.purpose} />
+                  )}
                 </td>
 
                 {/* APPROVAL STATUS */}
