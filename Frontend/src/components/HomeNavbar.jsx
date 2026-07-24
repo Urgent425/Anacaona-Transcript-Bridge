@@ -252,8 +252,9 @@ export default function HomeNavbar() {
 
               {/* tagline */}
               <div className="mt-8 text-[11px] text-slate-500 leading-relaxed">
-                Secure transcript, verification, and translation services
-                for Haitian students worldwide.
+                Secure transcript, official document, verification, and
+                translation services for Haitian students and citizens
+                worldwide.
               </div>
             </nav>
 

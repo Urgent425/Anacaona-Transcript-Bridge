@@ -1,6 +1,6 @@
 //src/components/PricingSection.jsx
 import React from "react";
-import { ArrowRight, FileText, Languages } from "lucide-react";
+import { ArrowRight, FileText, Languages, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function PricingCard({ icon, title, price, unit, bullets, cta }) {
@@ -52,7 +52,7 @@ export default function PricingSection() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2">
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
           <PricingCard
             icon={<FileText className="w-5 h-5" />}
             title="Transcript Evaluation"
@@ -64,6 +64,19 @@ export default function PricingSection() {
               "We send it where you need",
             ]}
             cta="Start an evaluation"
+          />
+
+          <PricingCard
+            icon={<ShieldCheck className="w-5 h-5" />}
+            title="Official Document Requests"
+            price="From $30"
+            unit="/ document"
+            bullets={[
+              "Archives Nationales, DCPJ, OAVCT, DGI, and more",
+              "Birth, marriage, police, tax, and other official records",
+              "Identity verification included for your security",
+            ]}
+            cta="Request a document"
           />
 
           <PricingCard

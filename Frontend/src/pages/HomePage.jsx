@@ -4,6 +4,7 @@ import HomeNavbar from "../components/HomeNavbar";
 
 import HeroSection from "../components/HeroSection";
 import HowItWorksSection from "../components/HowItWorksSection";
+import InstitutionsWeServeSection from "../components/InstitutionsWeServeSection";
 import PricingSection from "../components/PricingSection";
 import SecuritySection from "../components/SecuritySection";
 import CTASection from "../components/CTASection";
@@ -18,6 +19,7 @@ export default function HomePage() {
       {/* PAGE SECTIONS */}
       <HeroSection />
       <HowItWorksSection />
+      <InstitutionsWeServeSection />
       <PricingSection />
       <SecuritySection />
       <CTASection />

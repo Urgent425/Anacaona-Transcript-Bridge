@@ -19,6 +19,16 @@ import { AnimatePresence, motion } from "framer-motion";
  */
 const HERO_UPDATES = [
   {
+    id: "u0",
+    label: "New",
+    title: "Official document requests are now live",
+    body: "Request civil, professional, and government records — Archives Nationales, DCPJ, OAVCT, DGI, and more.",
+    meta: "Just launched",
+    ctaLabel: "Request a document",
+    ctaHref: "/register?flow=document-request",
+    isRouterLink: true,
+  },
+  {
     id: "u1",
     label: "Translation",
     title: "Translation-only service is available",
@@ -32,7 +42,7 @@ const HERO_UPDATES = [
     id: "u2",
     label: "Institutions",
     title: "Institution validation workflow is live",
-    body: "Registrars can approve, reject, or request clarification directly in the portal.",
+    body: "Schools and state institutions can approve, reject, or request clarification directly in the portal.",
     meta: "This week",
     ctaLabel: "How it works",
     ctaHref: "#how",
@@ -199,7 +209,7 @@ export default function HeroSection() {
             transition={{ duration: 0.4 }}
             className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-white"
           >
-            Haitian transcripts,{" "}
+            Haitian transcripts and official documents,{" "}
             <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">
               verified & delivered
             </span>
@@ -215,11 +225,15 @@ export default function HeroSection() {
           >
             Use Anacaona Transcript Bridge to request{" "}
             <span className="text-white/90 font-medium">ATA-member certified translation</span>{" "}
-            (French/Spanish → English) or start the{" "}
+            (French/Spanish → English), start the{" "}
             <span className="text-white/90 font-medium">
               institution-verified transcript workflow
             </span>{" "}
-            for education, immigration, and professional licensing.
+            for education, immigration, and professional licensing, or request{" "}
+            <span className="text-white/90 font-medium">
+              official civil, professional, and government documents
+            </span>{" "}
+            directly from Haitian state institutions.
           </motion.p>
 
 
@@ -228,7 +242,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start"
+            className="mt-8 flex flex-col sm:flex-row flex-wrap gap-4 justify-center md:justify-start"
           >
             <Link
               to="/register?flow=evaluation"
@@ -236,6 +250,14 @@ export default function HeroSection() {
             >
               <Send className="w-4 h-4 mr-2" />
               Start Evaluation
+            </Link>
+
+            <Link
+              to="/register?flow=document-request"
+              className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-200 border border-white/20 hover:bg-white/5 transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              Request Official Documents
             </Link>
 
             <Link

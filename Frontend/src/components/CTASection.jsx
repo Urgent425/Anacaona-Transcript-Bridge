@@ -1,7 +1,7 @@
 //src/components/CTASection.jsx
 import { Link} from "react-router-dom";
 export default function CTASection({
-  title = "Ready to send your transcript?",
+  title = "Ready to send your transcript or your documents?",
   description = "Create your account and start your first request in minutes.",
   buttonLabel = "Create my account",
   buttonLink = "/register",

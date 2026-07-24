@@ -7,19 +7,19 @@ const steps = [
   {
     icon: <Upload className="w-5 h-5" />,
     title: "Upload your documents",
-    desc: "Transcript, diploma, birth certificate. PDF or clear photo accepted.",
+    desc: "Transcript, diploma, birth certificate, police record, tax certificate, and more. PDF or clear photo accepted.",
     note: "Need translation? We handle it.",
   },
   {
     icon: <CheckCircle2 className="w-5 h-5" />,
-    title: "Your school verifies",
-    desc: "We work with Haitian institutions to confirm authenticity.",
+    title: "The institution verifies",
+    desc: "We work with Haitian schools and state institutions (Archives Nationales, DCPJ, OAVCT, DGI, and more) to confirm authenticity.",
     note: "No travel. No middleman.",
   },
   {
     icon: <SendHorizonal className="w-5 h-5" />,
     title: "We deliver it where you need",
-    desc: "Preferred credential evaluator , immigration, employer, or licensing board.",
+    desc: "Preferred credential evaluator, immigration, employer, licensing board, or straight to you.",
     note: "Official and trackable.",
   },
 ];
@@ -35,8 +35,8 @@ export default function HowItWorksSection() {
           How it works
         </h2>
         <p className="text-slate-400 max-w-2xl mx-auto mt-4 text-base md:text-lg">
-          Anacaona moves your education across borders securely, and with
-          respect for Haitian institutions.
+          Anacaona moves your education and official records across borders
+          securely, and with respect for Haitian institutions.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
