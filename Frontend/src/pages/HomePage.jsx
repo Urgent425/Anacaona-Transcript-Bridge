@@ -5,8 +5,11 @@ import HomeNavbar from "../components/HomeNavbar";
 import HeroSection from "../components/HeroSection";
 import HowItWorksSection from "../components/HowItWorksSection";
 import InstitutionsWeServeSection from "../components/InstitutionsWeServeSection";
+import ForFamilyAbroadSection from "../components/ForFamilyAbroadSection";
 import PricingSection from "../components/PricingSection";
+import TrustSection from "../components/TrustSection";
 import SecuritySection from "../components/SecuritySection";
+import FAQSection from "../components/FAQSection";
 import CTASection from "../components/CTASection";
 import Footer from "../components/Footer";
 
@@ -20,8 +23,11 @@ export default function HomePage() {
       <HeroSection />
       <HowItWorksSection />
       <InstitutionsWeServeSection />
+      <ForFamilyAbroadSection />
       <PricingSection />
+      <TrustSection />
       <SecuritySection />
+      <FAQSection />
       <CTASection />
       <Footer />
     </div>

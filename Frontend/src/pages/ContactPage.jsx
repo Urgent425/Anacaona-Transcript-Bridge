@@ -6,7 +6,7 @@ const ContactPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData(e.target);
-    const res = await fetch("https://formspree.io/f/xpwrjqea", {
+    const res = await fetch("https://formspree.io/f/maqrgkez", {
       method: "POST",
       body: data,
       headers: { Accept: "application/json" },

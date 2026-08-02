@@ -13,10 +13,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-/**
- * Easy-to-edit announcements for the hero card.
- * Later you can fetch these from an API and replace this array.
- */
 const HERO_UPDATES = [
   {
     id: "u0",
@@ -91,7 +87,6 @@ function UpdatesCard() {
       onMouseLeave={() => setPaused(false)}
       className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_30px_120px_-10px_rgba(251,191,36,0.35)] p-5 text-left"
     >
-      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -105,7 +100,6 @@ function UpdatesCard() {
           </p>
         </div>
 
-        {/* Controls */}
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -126,7 +120,6 @@ function UpdatesCard() {
         </div>
       </div>
 
-      {/* Slide */}
       <AnimatePresence mode="wait">
         <motion.div
           key={current.id}
@@ -149,7 +142,6 @@ function UpdatesCard() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            {/* Dots */}
             <div className="flex items-center gap-1.5">
               {items.map((it, i) => (
                 <button
@@ -165,7 +157,6 @@ function UpdatesCard() {
               ))}
             </div>
 
-            {/* CTA */}
             {current.isRouterLink ? (
               <Link
                 to={current.ctaHref}
@@ -197,11 +188,9 @@ function UpdatesCard() {
 export default function HeroSection() {
   return (
     <section className="relative bg-slate-950 text-white overflow-hidden pt-28 pb-20 md:pt-32 md:pb-32">
-      {/* subtle radial glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.15),transparent_60%)] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-        {/* LEFT: Text content */}
         <div className="text-center md:text-left">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -236,8 +225,6 @@ export default function HeroSection() {
             directly from Haitian state institutions.
           </motion.p>
 
-
-          {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -269,7 +256,6 @@ export default function HeroSection() {
             </Link>
           </motion.div>
 
-          {/* trust badges */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -297,9 +283,22 @@ export default function HeroSection() {
             </div>
           </motion.div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-5 flex justify-center md:justify-start"
+          >
+            <a
+              href="#family"
+              className="inline-flex items-center gap-2 text-xs text-slate-300 bg-white/5 border border-white/10 rounded-full px-4 py-2 hover:bg-white/10 transition-colors"
+            >
+              🌍 Handling this for family in Haiti? <span className="text-amber-300 underline underline-offset-2">See how it works</span>
+            </a>
+          </motion.div>
+
         </div>
 
-        {/* RIGHT: Sliding News & Announcements card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
