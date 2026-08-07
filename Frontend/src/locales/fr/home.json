@@ -1,0 +1,262 @@
+{
+  "nav": {
+    "howItWorks": "Comment ça marche",
+    "pricing": "Tarifs",
+    "login": "Connexion étudiant",
+    "getStarted": "Commencer",
+    "tagline": "Services sécurisés de relevés de notes, de documents officiels, de vérification et de traduction pour les étudiants et citoyens haïtiens dans le monde entier.",
+    "loginShort": "Connexion",
+    "dashboard": "Tableau de bord",
+    "hi": "Bonjour,",
+    "logout": "Déconnexion"
+  },
+  "hero": {
+    "updatesLabel": "Actualités & annonces",
+    "updatesSub": "Nouveautés sur la traduction, les institutions et la livraison des évaluations",
+    "viewAllUpdates": "Voir toutes les actualités",
+    "headlinePart1": "Relevés de notes et documents officiels haïtiens,",
+    "headlineHighlight": "vérifiés et livrés",
+    "headlinePart2": "— avec traduction certifiée.",
+    "subtitlePrefix": "Utilisez Anacaona Transcript Bridge pour demander une",
+    "subtitleTranslation": "traduction certifiée par un membre de l'ATA",
+    "subtitleMid1": "(français/espagnol → anglais), démarrer le",
+    "subtitleWorkflow": "processus de relevé de notes vérifié par l'institution",
+    "subtitleMid2": "pour l'éducation, l'immigration ou une licence professionnelle, ou demander des",
+    "subtitleDocuments": "documents officiels civils, professionnels et gouvernementaux",
+    "subtitleSuffix": "directement auprès des institutions publiques haïtiennes.",
+    "ctaEvaluation": "Démarrer une évaluation",
+    "ctaDocumentRequest": "Demander un document officiel",
+    "ctaTranslation": "Traduction seulement",
+    "badgeSecure": "Traitement sécurisé et chiffré des documents",
+    "badgeInstitution": "Documents approuvés par l'institution lorsque requis",
+    "badgeTranslation": "Traduction certifiée (FR/ES → EN)",
+    "badgeAta": "Membre de l'American Translators Association (ATA)",
+    "familyCallout": "Vous vous en occupez pour de la famille en Haïti ?",
+    "familyCalloutLink": "Voir comment ça marche",
+    "updates": {
+      "u0": {
+        "label": "Nouveau",
+        "title": "Les demandes de documents officiels sont maintenant disponibles",
+        "body": "Demandez des actes civils, professionnels et gouvernementaux — Archives Nationales, DCPJ, OAVCT, DGI, et plus encore.",
+        "meta": "Vient de sortir",
+        "cta": "Demander un document"
+      },
+      "u1": {
+        "label": "Traduction",
+        "title": "Le service de traduction seule est disponible",
+        "body": "Traduction certifiée pour l'immigration, l'éducation et un usage officiel (français/espagnol → anglais).",
+        "meta": "Disponible maintenant",
+        "cta": "Démarrer une traduction"
+      },
+      "u2": {
+        "label": "Institutions",
+        "title": "Le processus de validation par les institutions est actif",
+        "body": "Les écoles et institutions publiques peuvent approuver, refuser ou demander une clarification directement dans le portail.",
+        "meta": "Cette semaine",
+        "cta": "Comment ça marche"
+      },
+      "u3": {
+        "label": "À venir",
+        "title": "Livraison sécurisée aux évaluateurs",
+        "body": "Nous préparons une livraison simplifiée vers nos partenaires d'évaluation de diplômes.",
+        "meta": "Bientôt disponible",
+        "cta": "Démarrer une évaluation"
+      }
+    }
+  },
+  "howItWorks": {
+    "title": "Comment ça marche",
+    "subtitle": "Anacaona fait voyager votre parcours scolaire et vos documents officiels au-delà des frontières, en toute sécurité et dans le respect des institutions haïtiennes.",
+    "steps": {
+      "s1": {
+        "title": "Téléversez vos documents",
+        "desc": "Relevé de notes, diplôme, acte de naissance, casier judiciaire, quittance fiscale, et plus encore. PDF ou photo claire acceptés.",
+        "note": "Besoin d'une traduction ? Nous nous en occupons."
+      },
+      "s2": {
+        "title": "L'institution vérifie",
+        "desc": "Nous collaborons avec des écoles et institutions publiques haïtiennes (Archives Nationales, DCPJ, OAVCT, DGI, et plus) pour confirmer l'authenticité.",
+        "note": "Sans déplacement. Sans intermédiaire."
+      },
+      "s3": {
+        "title": "Nous le livrons là où vous en avez besoin",
+        "desc": "Évaluateur de diplômes de votre choix, immigration, employeur, ordre professionnel, ou directement à vous.",
+        "note": "Officiel et traçable."
+      }
+    }
+  },
+  "institutions": {
+    "title": "Les institutions avec lesquelles nous collaborons",
+    "subtitle": "Des registraires universitaires aux institutions nationales, chaque demande est acheminée au bon endroit et vérifiée avant d'être transmise.",
+    "footnote": "D'autres institutions publiques s'ajoutent régulièrement. La vôtre n'y est pas ? Contactez-nous, nous allons vérifier.",
+    "groups": {
+      "universities": {
+        "label": "Universités & écoles",
+        "desc": "Évaluation des relevés de notes et diplômes pour les établissements d'enseignement supérieur en Haïti."
+      },
+      "archives": {
+        "label": "Archives Nationales d'Haïti",
+        "desc": "Actes civils : naissance, mariage, décès et divorce."
+      },
+      "dcpj": {
+        "label": "DCPJ",
+        "desc": "Certificats de bonne vie et mœurs et demandes de casier judiciaire."
+      },
+      "dgi": {
+        "label": "DGI",
+        "desc": "Quittances fiscales et documents gouvernementaux connexes."
+      },
+      "oavct": {
+        "label": "OAVCT",
+        "desc": "Assurance véhicule et documents officiels connexes."
+      }
+    }
+  },
+  "family": {
+    "title": "Vous vous en occupez pour de la famille restée au pays ?",
+    "body": "Une grande partie de ce que nous faisons est destinée à quelqu'un qui n'est pas devant l'écran — l'acte de naissance d'un parent, le casier judiciaire d'un frère ou d'une sœur, un document dont un proche en Haïti a besoin mais qu'il ne peut pas facilement demander lui-même. Vous vous en occupez d'où que vous soyez ; c'est lui ou elle qui reçoit le document.",
+    "cta": "Faire une demande pour quelqu'un d'autre",
+    "steps": {
+      "s1": {
+        "title": "Créez votre compte",
+        "desc": "Vous vous inscrivez — le compte et le paiement restent avec vous, où que vous soyez."
+      },
+      "s2": {
+        "title": "Entrez ses informations",
+        "desc": "Soumettez la demande avec le nom légal, la date de naissance et la pièce d'identité de votre proche — le document est délivré à son nom, pas au vôtre."
+      },
+      "s3": {
+        "title": "Suivez tout, de n'importe où",
+        "desc": "Suivez le statut, payez et soyez notifié dès que l'institution répond — sans jouer au téléphone, sans faire la queue au pays."
+      }
+    }
+  },
+  "pricing": {
+    "title": "Des tarifs transparents",
+    "subtitle": "Aucun frais caché. Aucun « agent ». Vous voyez toujours l'état de votre demande.",
+    "footnote": "Les tarifs affichés sont indicatifs et peuvent changer.",
+    "evaluation": {
+      "title": "Évaluation de relevé de notes",
+      "price": "Jusqu'à 210 $",
+      "unit": "/ demande",
+      "b1": "Nous travaillons directement avec le registraire de votre école",
+      "b2": "Nous confirmons l'authenticité de votre relevé",
+      "b3": "Nous l'envoyons là où vous en avez besoin",
+      "cta": "Démarrer une évaluation"
+    },
+    "documentRequest": {
+      "title": "Demandes de documents officiels",
+      "price": "À partir de 30 $",
+      "unit": "/ document",
+      "b1": "Archives Nationales, DCPJ, OAVCT, DGI, et plus encore",
+      "b2": "Naissance, mariage, casier judiciaire, fiscalité et autres actes officiels",
+      "b3": "Vérification d'identité incluse pour votre sécurité",
+      "cta": "Demander un document"
+    },
+    "translation": {
+      "title": "Traduction certifiée",
+      "price": "25 $",
+      "unit": "/ page",
+      "b1": "Du français ou de l'espagnol vers l'anglais",
+      "b2": "Répond aux exigences d'éducation et d'immigration",
+      "b3": "Livrée en PDF certifié",
+      "cta": "Demander une traduction"
+    }
+  },
+  "trust": {
+    "title": "Pourquoi les familles nous confient quelque chose d'aussi personnel",
+    "subtitle": "Demander un casier judiciaire, un acte de naissance ou une quittance fiscale, c'est confier des informations d'identité. Voici exactement comment nous les traitons.",
+    "items": {
+      "t1": {
+        "title": "Nous ne sommes pas un organisme gouvernemental",
+        "desc": "Anacaona est un service indépendant qui prépare, soumet et suit votre demande. Les Archives Nationales, la DCPJ, l'OAVCT, la DGI et votre école conservent l'entière autorité d'approuver, de refuser ou de délivrer le document."
+      },
+      "t2": {
+        "title": "Votre pièce d'identité est vérifiée, jamais publiée",
+        "desc": "Une pièce d'identité gouvernementale sert uniquement à vérifier votre identité avant l'envoi de votre demande. Elle est chiffrée, visible uniquement par l'équipe de vérification, et jamais partagée au-delà de cette vérification."
+      },
+      "t3": {
+        "title": "Vous gardez le contrôle jusqu'au paiement",
+        "desc": "Une erreur ou un changement d'avis ? Vous pouvez supprimer vous-même un document téléversé à tout moment avant le paiement — sans attendre le support."
+      },
+      "t4": {
+        "title": "Une vraie équipe, pas un labyrinthe de robots",
+        "desc": "Vos questions ou préoccupations sont adressées directement à une personne à onlinesupport@anacaonaservices.org, ou via notre page de contact."
+      }
+    }
+  },
+  "security": {
+    "title": "Vos documents sont sensibles. Nous les traitons comme tels.",
+    "subtitle": "Passeports, diplômes, actes de naissance, casiers judiciaires — nous savons ce qui est en jeu.",
+    "items": {
+      "s1": {
+        "title": "Protégés",
+        "desc": "Tous les documents sont chiffrés en transit et au repos."
+      },
+      "s2": {
+        "title": "Appuyés par l'institution",
+        "desc": "Votre école ou l'institution publique assignée approuve avant tout envoi."
+      },
+      "s3": {
+        "title": "Visibilité complète",
+        "desc": "Vous pouvez suivre chaque étape depuis votre tableau de bord."
+      }
+    },
+    "footnote": "Fiers de servir les étudiants haïtiens 🇭🇹 en quête d'opportunités aux 🇺🇸 🇨🇦 🇫🇷"
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "subtitlePrefix": "Une question sans réponse ?",
+    "subtitleLink": "Contactez-nous",
+    "subtitleSuffix": "— une vraie personne vous répondra.",
+    "items": {
+      "q1": {
+        "q": "Anacaona fait-il partie du gouvernement haïtien ?",
+        "a": "Non. Anacaona est un service indépendant qui prépare, soumet et suit votre demande. C'est toujours l'institution elle-même — votre école, les Archives Nationales, la DCPJ, l'OAVCT ou la DGI — qui décide en dernier ressort d'approuver, de refuser ou de délivrer le document."
+      },
+      "q2": {
+        "q": "Combien de temps prendra ma demande ?",
+        "a": "Cela dépend de l'institution et du type de document — certaines sont plus rapides que d'autres. Vous verrez l'état de votre demande en temps réel dans votre tableau de bord, sans jamais rester dans l'incertitude."
+      },
+      "q3": {
+        "q": "Ma pièce d'identité est-elle vraiment en sécurité ?",
+        "a": "Oui. Elle est chiffrée et sert uniquement à vérifier votre identité avant l'envoi de votre demande. Elle est visible uniquement par l'équipe de vérification et n'est jamais publiée ni partagée au-delà de cette vérification."
+      },
+      "q4": {
+        "q": "Puis-je demander un document pour un membre de ma famille en Haïti ?",
+        "a": "Oui. Soumettez la demande avec son nom légal, sa date de naissance et ses informations d'identité — le document est délivré à son nom. Vous gérez le compte et le paiement d'où que vous soyez."
+      },
+      "q5": {
+        "q": "Que se passe-t-il si ma demande est refusée ?",
+        "a": "Vous verrez la raison directement dans votre tableau de bord. Contactez notre équipe de support et nous vous aiderons à comprendre les prochaines étapes pour votre situation."
+      },
+      "q6": {
+        "q": "Comment puis-je payer, et puis-je payer plusieurs demandes en une fois ?",
+        "a": "Le paiement se fait par carte via Stripe. Vous pouvez payer chaque document individuellement, ou utiliser l'option « Payer le total dû » pour régler toutes vos demandes en attente en un seul paiement."
+      }
+    }
+  },
+  "cta": {
+    "title": "Prêt à envoyer votre relevé de notes ?",
+    "description": "Créez votre compte et démarrez votre première demande en quelques minutes.",
+    "buttonLabel": "Créer mon compte"
+  },
+  "footer": {
+    "tagline": "En l'honneur de la reine Anacaona, « La Fleur d'or ». Nous existons pour que l'éducation haïtienne puisse voyager avec le peuple haïtien.",
+    "product": "Produit",
+    "howItWorks": "Comment ça marche",
+    "pricing": "Tarifs",
+    "login": "Connexion étudiant",
+    "contact": "Contact",
+    "rights": "Tous droits réservés."
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "namePlaceholder": "Votre nom",
+    "emailPlaceholder": "Votre courriel",
+    "messagePlaceholder": "Votre message",
+    "send": "Envoyer le message",
+    "success": "Merci de nous avoir contactés !",
+    "error": "Oups ! Une erreur est survenue."
+  }
+}

@@ -1,0 +1,262 @@
+{
+  "nav": {
+    "howItWorks": "How it works",
+    "pricing": "Pricing",
+    "login": "Student login",
+    "getStarted": "Get started",
+    "tagline": "Secure transcript, official document, verification, and translation services for Haitian students and citizens worldwide.",
+    "loginShort": "Login",
+    "dashboard": "Dashboard",
+    "hi": "Hi,",
+    "logout": "Logout"
+  },
+  "hero": {
+    "updatesLabel": "News & Announcements",
+    "updatesSub": "Updates on translation, institutions, and evaluation delivery",
+    "viewAllUpdates": "View all updates",
+    "headlinePart1": "Haitian transcripts and official documents,",
+    "headlineHighlight": "verified & delivered",
+    "headlinePart2": "— plus certified translation.",
+    "subtitlePrefix": "Use Anacaona Transcript Bridge to request",
+    "subtitleTranslation": "ATA-member certified translation",
+    "subtitleMid1": "(French/Spanish → English), start the",
+    "subtitleWorkflow": "institution-verified transcript workflow",
+    "subtitleMid2": "for education, immigration, and professional licensing, or request",
+    "subtitleDocuments": "official civil, professional, and government documents",
+    "subtitleSuffix": "directly from Haitian state institutions.",
+    "ctaEvaluation": "Start Evaluation",
+    "ctaDocumentRequest": "Request Official Documents",
+    "ctaTranslation": "Translation Only",
+    "badgeSecure": "Secure, encrypted document handling",
+    "badgeInstitution": "Institution-approved records when required",
+    "badgeTranslation": "Certified translation (FR/ES → EN)",
+    "badgeAta": "Member, American Translators Association (ATA)",
+    "familyCallout": "Handling this for family in Haiti?",
+    "familyCalloutLink": "See how it works",
+    "updates": {
+      "u0": {
+        "label": "New",
+        "title": "Official document requests are now live",
+        "body": "Request civil, professional, and government records — Archives Nationales, DCPJ, OAVCT, DGI, and more.",
+        "meta": "Just launched",
+        "cta": "Request a document"
+      },
+      "u1": {
+        "label": "Translation",
+        "title": "Translation-only service is available",
+        "body": "Certified translation for immigration, education, and official use (French/Spanish → English).",
+        "meta": "Available now",
+        "cta": "Start translation"
+      },
+      "u2": {
+        "label": "Institutions",
+        "title": "Institution validation workflow is live",
+        "body": "Schools and state institutions can approve, reject, or request clarification directly in the portal.",
+        "meta": "This week",
+        "cta": "How it works"
+      },
+      "u3": {
+        "label": "Roadmap",
+        "title": "Secure delivery to evaluators",
+        "body": "We’re preparing streamlined delivery to credential evaluation partners.",
+        "meta": "Coming soon",
+        "cta": "Start evaluation"
+      }
+    }
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "subtitle": "Anacaona moves your education and official records across borders securely, and with respect for Haitian institutions.",
+    "steps": {
+      "s1": {
+        "title": "Upload your documents",
+        "desc": "Transcript, diploma, birth certificate, police record, tax certificate, and more. PDF or clear photo accepted.",
+        "note": "Need translation? We handle it."
+      },
+      "s2": {
+        "title": "The institution verifies",
+        "desc": "We work with Haitian schools and state institutions (Archives Nationales, DCPJ, OAVCT, DGI, and more) to confirm authenticity.",
+        "note": "No travel. No middleman."
+      },
+      "s3": {
+        "title": "We deliver it where you need",
+        "desc": "Preferred credential evaluator, immigration, employer, licensing board, or straight to you.",
+        "note": "Official and trackable."
+      }
+    }
+  },
+  "institutions": {
+    "title": "Institutions we work with",
+    "subtitle": "From university registrars to national institutions, every request is routed to the right place and reviewed before anything is released.",
+    "footnote": "More state institutions are being added. Don't see yours? Contact us and we'll look into it.",
+    "groups": {
+      "universities": {
+        "label": "Universities & Schools",
+        "desc": "Transcript and credential evaluation for higher-ed institutions across Haiti."
+      },
+      "archives": {
+        "label": "Archives Nationales d'Haïti",
+        "desc": "Civil records: birth, marriage, death, and divorce certificates."
+      },
+      "dcpj": {
+        "label": "DCPJ",
+        "desc": "Police certificates and background record requests."
+      },
+      "dgi": {
+        "label": "DGI",
+        "desc": "Tax certificates and related government filings."
+      },
+      "oavct": {
+        "label": "OAVCT",
+        "desc": "Vehicle insurance and related official records."
+      }
+    }
+  },
+  "family": {
+    "title": "Handling this for family back home?",
+    "body": "A lot of what we do is for someone who isn't the one sitting at the keyboard — a parent's birth certificate, a sibling's police record, a document a relative in Haiti needs but can't easily request themselves. You handle it from wherever you are; they get the document.",
+    "cta": "Start a request for someone else",
+    "steps": {
+      "s1": {
+        "title": "Create your account",
+        "desc": "You sign up — the account and payment stay with you, wherever you are."
+      },
+      "s2": {
+        "title": "Enter their information",
+        "desc": "Submit the request using your family member's legal name, date of birth, and ID — the document is issued to them, not you."
+      },
+      "s3": {
+        "title": "Track it from anywhere",
+        "desc": "Follow the status, pay, and get notified the moment the institution responds — no phone tag, no waiting in line back home."
+      }
+    }
+  },
+  "pricing": {
+    "title": "Transparent pricing",
+    "subtitle": "No hidden fees. No \"agent.\" You always see the status.",
+    "footnote": "Pricing shown is indicative and may change.",
+    "evaluation": {
+      "title": "Transcript Evaluation",
+      "price": "Up to $210",
+      "unit": "/ submission",
+      "b1": "We work directly with your school registrar",
+      "b2": "We confirm authenticity of your record",
+      "b3": "We send it where you need",
+      "cta": "Start an evaluation"
+    },
+    "documentRequest": {
+      "title": "Official Document Requests",
+      "price": "From $30",
+      "unit": "/ document",
+      "b1": "Archives Nationales, DCPJ, OAVCT, DGI, and more",
+      "b2": "Birth, marriage, police, tax, and other official records",
+      "b3": "Identity verification included for your security",
+      "cta": "Request a document"
+    },
+    "translation": {
+      "title": "Certified Translation",
+      "price": "$25",
+      "unit": "/ page",
+      "b1": "French or Spanish to English",
+      "b2": "Meets education & immigration needs",
+      "b3": "Delivered as certified PDF",
+      "cta": "Request translation"
+    }
+  },
+  "trust": {
+    "title": "Why families trust us with something this personal",
+    "subtitle": "Requesting a police record, a birth certificate, or a tax document means handing over identity details. Here's exactly how we handle that.",
+    "items": {
+      "t1": {
+        "title": "We're not a government office",
+        "desc": "Anacaona is an independent service that prepares, submits, and tracks your request. Archives Nationales, DCPJ, OAVCT, DGI, and your school retain full authority to approve, reject, or issue the document."
+      },
+      "t2": {
+        "title": "Your ID is reviewed, not published",
+        "desc": "A government ID is only used to verify your identity before your request is sent forward. It's encrypted, visible only to the reviewing team, and never shared beyond that review."
+      },
+      "t3": {
+        "title": "You're in control until you pay",
+        "desc": "Made a mistake or changed your mind? You can delete an uploaded document yourself at any point before payment — no waiting on support."
+      },
+      "t4": {
+        "title": "A real team, not a chatbot maze",
+        "desc": "Questions or concerns reach a person directly at onlinesupport@anacaonaservices.org, or through our contact page."
+      }
+    }
+  },
+  "security": {
+    "title": "Your documents are sensitive. We treat them like that.",
+    "subtitle": "Passports, diplomas, birth certificates, police records — we know what's at stake.",
+    "items": {
+      "s1": {
+        "title": "Protected",
+        "desc": "All documents are encrypted in transit and at rest."
+      },
+      "s2": {
+        "title": "Institution-backed",
+        "desc": "Your school or the assigned state institution approves before anything is sent."
+      },
+      "s3": {
+        "title": "Full visibility",
+        "desc": "You can track every step in your dashboard."
+      }
+    },
+    "footnote": "Proudly serving Haitian students 🇭🇹 working toward opportunities in 🇺🇸 🇨🇦 🇫🇷"
+  },
+  "faq": {
+    "title": "Common questions",
+    "subtitlePrefix": "Still unsure about something?",
+    "subtitleLink": "Reach out",
+    "subtitleSuffix": "— a real person will answer.",
+    "items": {
+      "q1": {
+        "q": "Is Anacaona part of the Haitian government?",
+        "a": "No. Anacaona is an independent service that prepares, submits, and tracks your request. The institution itself — your school, Archives Nationales, DCPJ, OAVCT, or DGI — always makes the final decision to approve, reject, or issue the document."
+      },
+      "q2": {
+        "q": "How long will my request take?",
+        "a": "It depends on the institution and the type of document — some move faster than others. You'll see live status updates in your dashboard the entire time, so you're never left guessing."
+      },
+      "q3": {
+        "q": "Is my government ID really safe?",
+        "a": "Yes. It's encrypted and used only to verify your identity before your request is sent forward. It's visible only to the reviewing team and is never published or shared beyond that review."
+      },
+      "q4": {
+        "q": "Can I request a document for a family member in Haiti?",
+        "a": "Yes. Submit the request using their legal name, date of birth, and ID information — the document is issued in their name. You handle the account and payment from wherever you are."
+      },
+      "q5": {
+        "q": "What happens if my request is rejected?",
+        "a": "You'll see the reason directly in your dashboard. Reach out to our support team and we'll help you understand next steps for your specific case."
+      },
+      "q6": {
+        "q": "How do I pay, and can I pay for several requests at once?",
+        "a": "Payment is by card through Stripe. You can pay for each document individually, or use the \"Pay Total Due\" option to cover every pending request in one checkout."
+      }
+    }
+  },
+  "cta": {
+    "title": "Ready to send your transcript?",
+    "description": "Create your account and start your first request in minutes.",
+    "buttonLabel": "Create my account"
+  },
+  "footer": {
+    "tagline": "In honor of Queen Anacaona, \"The Golden Flower.\" We exist so Haitian education can travel with Haitian people.",
+    "product": "Product",
+    "howItWorks": "How it works",
+    "pricing": "Pricing",
+    "login": "Student login",
+    "contact": "Contact",
+    "rights": "All rights reserved."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "Your email",
+    "messagePlaceholder": "Your message",
+    "send": "Send Message",
+    "success": "Thanks for reaching out!",
+    "error": "Oops! Something went wrong."
+  }
+}

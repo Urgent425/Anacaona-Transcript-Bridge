@@ -2,6 +2,7 @@
 import React from "react";
 import { ArrowRight, FileText, Languages, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function PricingCard({ icon, title, price, unit, bullets, cta }) {
   return (
@@ -38,6 +39,8 @@ function PricingCard({ icon, title, price, unit, bullets, cta }) {
 }
 
 export default function PricingSection() {
+  const { t } = useTranslation();
+
   return (
     <section
     id="pricing"
@@ -45,56 +48,56 @@ export default function PricingSection() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-            Transparent pricing
+            {t("pricing.title")}
           </h2>
           <p className="text-slate-400 mt-4 text-base md:text-lg">
-            No hidden fees. No “agent.” You always see the status.
+            {t("pricing.subtitle")}
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           <PricingCard
             icon={<FileText className="w-5 h-5" />}
-            title="Transcript Evaluation"
-            price="Up to $210"
-            unit="/ submission"
+            title={t("pricing.evaluation.title")}
+            price={t("pricing.evaluation.price")}
+            unit={t("pricing.evaluation.unit")}
             bullets={[
-              "We work directly with your school registrar",
-              "We confirm authenticity of your record",
-              "We send it where you need",
+              t("pricing.evaluation.b1"),
+              t("pricing.evaluation.b2"),
+              t("pricing.evaluation.b3"),
             ]}
-            cta="Start an evaluation"
+            cta={t("pricing.evaluation.cta")}
           />
 
           <PricingCard
             icon={<ShieldCheck className="w-5 h-5" />}
-            title="Official Document Requests"
-            price="From $30"
-            unit="/ document"
+            title={t("pricing.documentRequest.title")}
+            price={t("pricing.documentRequest.price")}
+            unit={t("pricing.documentRequest.unit")}
             bullets={[
-              "Archives Nationales, DCPJ, OAVCT, DGI, and more",
-              "Birth, marriage, police, tax, and other official records",
-              "Identity verification included for your security",
+              t("pricing.documentRequest.b1"),
+              t("pricing.documentRequest.b2"),
+              t("pricing.documentRequest.b3"),
             ]}
-            cta="Request a document"
+            cta={t("pricing.documentRequest.cta")}
           />
 
           <PricingCard
             icon={<Languages className="w-5 h-5" />}
-            title="Certified Translation"
-            price="$25"
-            unit="/ page"
+            title={t("pricing.translation.title")}
+            price={t("pricing.translation.price")}
+            unit={t("pricing.translation.unit")}
             bullets={[
-              "French or Spanish to English",
-              "Meets education & immigration needs",
-              "Delivered as certified PDF",
+              t("pricing.translation.b1"),
+              t("pricing.translation.b2"),
+              t("pricing.translation.b3"),
             ]}
-            cta="Request translation"
+            cta={t("pricing.translation.cta")}
           />
         </div>
 
         <p className="text-center text-[11px] text-slate-500 mt-6">
-          Pricing shown is indicative and may change.
+          {t("pricing.footnote")}
         </p>
       </div>
     </section>

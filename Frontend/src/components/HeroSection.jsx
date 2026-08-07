@@ -9,62 +9,38 @@ import {
   ChevronLeft,
   ChevronRight,
   Languages,
-  Award,        // <-- ADD THIS
+  Award,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
-const HERO_UPDATES = [
-  {
-    id: "u0",
-    label: "New",
-    title: "Official document requests are now live",
-    body: "Request civil, professional, and government records — Archives Nationales, DCPJ, OAVCT, DGI, and more.",
-    meta: "Just launched",
-    ctaLabel: "Request a document",
-    ctaHref: "/register?flow=document-request",
-    isRouterLink: true,
-  },
-  {
-    id: "u1",
-    label: "Translation",
-    title: "Translation-only service is available",
-    body: "Certified translation for immigration, education, and official use (French/Spanish → English).",
-    meta: "Available now",
-    ctaLabel: "Start translation",
-    ctaHref: "/register?flow=translation",
-    isRouterLink: true,
-  },
-  {
-    id: "u2",
-    label: "Institutions",
-    title: "Institution validation workflow is live",
-    body: "Schools and state institutions can approve, reject, or request clarification directly in the portal.",
-    meta: "This week",
-    ctaLabel: "How it works",
-    ctaHref: "#how",
-    isRouterLink: false,
-  },
-  {
-    id: "u3",
-    label: "Roadmap",
-    title: "Secure delivery to evaluators",
-    body: "We’re preparing streamlined delivery to credential evaluation partners.",
-    meta: "Coming soon",
-    ctaLabel: "Start evaluation",
-    ctaHref: "/register?flow=evaluation",
-    isRouterLink: true,
-  },
-];
+const UPDATE_IDS = ["u0", "u1", "u2", "u3"];
+
+const UPDATE_META = {
+  u0: { ctaHref: "/register?flow=document-request", isRouterLink: true },
+  u1: { ctaHref: "/register?flow=translation", isRouterLink: true },
+  u2: { ctaHref: "#how", isRouterLink: false },
+  u3: { ctaHref: "/register?flow=evaluation", isRouterLink: true },
+};
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
 function UpdatesCard() {
+  const { t } = useTranslation();
   const [index, setIndex] = React.useState(0);
   const [paused, setPaused] = React.useState(false);
 
-  const items = HERO_UPDATES;
+  const items = UPDATE_IDS.map((id) => ({
+    id,
+    ...UPDATE_META[id],
+    label: t(`hero.updates.${id}.label`),
+    title: t(`hero.updates.${id}.title`),
+    body: t(`hero.updates.${id}.body`),
+    meta: t(`hero.updates.${id}.meta`),
+    ctaLabel: t(`hero.updates.${id}.cta`),
+  }));
   const current = items[index];
 
   const next = React.useCallback(() => {
@@ -93,10 +69,10 @@ function UpdatesCard() {
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 border border-white/10">
               <Megaphone className="w-4 h-4 text-amber-300" />
             </span>
-            <p className="text-sm font-medium text-white">News & Announcements</p>
+            <p className="text-sm font-medium text-white">{t("hero.updatesLabel")}</p>
           </div>
           <p className="mt-1 text-[11px] text-slate-400">
-            Updates on translation, institutions, and evaluation delivery
+            {t("hero.updatesSub")}
           </p>
         </div>
 
@@ -178,7 +154,7 @@ function UpdatesCard() {
 
       <div className="mt-4 text-center">
         <a href="#updates" className="inline-block text-[11px] text-slate-400 hover:text-slate-300">
-          View all updates
+          {t("hero.viewAllUpdates")}
         </a>
       </div>
     </div>
@@ -186,6 +162,8 @@ function UpdatesCard() {
 }
 
 export default function HeroSection() {
+  const { t } = useTranslation();
+
   return (
     <section className="relative bg-slate-950 text-white overflow-hidden pt-28 pb-20 md:pt-32 md:pb-32">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,191,36,0.15),transparent_60%)] pointer-events-none" />
@@ -198,12 +176,12 @@ export default function HeroSection() {
             transition={{ duration: 0.4 }}
             className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-white"
           >
-            Haitian transcripts and official documents,{" "}
+            {t("hero.headlinePart1")}{" "}
             <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 bg-clip-text text-transparent">
-              verified & delivered
+              {t("hero.headlineHighlight")}
             </span>
             {" "}
-            — plus certified translation.
+            {t("hero.headlinePart2")}
           </motion.h1>
 
           <motion.p
@@ -212,17 +190,13 @@ export default function HeroSection() {
             transition={{ duration: 0.5, delay: 0.05 }}
             className="mt-4 text-lg text-slate-300 max-w-xl mx-auto md:mx-0"
           >
-            Use Anacaona Transcript Bridge to request{" "}
-            <span className="text-white/90 font-medium">ATA-member certified translation</span>{" "}
-            (French/Spanish → English), start the{" "}
-            <span className="text-white/90 font-medium">
-              institution-verified transcript workflow
-            </span>{" "}
-            for education, immigration, and professional licensing, or request{" "}
-            <span className="text-white/90 font-medium">
-              official civil, professional, and government documents
-            </span>{" "}
-            directly from Haitian state institutions.
+            {t("hero.subtitlePrefix")}{" "}
+            <span className="text-white/90 font-medium">{t("hero.subtitleTranslation")}</span>{" "}
+            {t("hero.subtitleMid1")}{" "}
+            <span className="text-white/90 font-medium">{t("hero.subtitleWorkflow")}</span>{" "}
+            {t("hero.subtitleMid2")}{" "}
+            <span className="text-white/90 font-medium">{t("hero.subtitleDocuments")}</span>{" "}
+            {t("hero.subtitleSuffix")}
           </motion.p>
 
           <motion.div
@@ -236,7 +210,7 @@ export default function HeroSection() {
               className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-900 bg-gradient-to-r from-amber-300 via-amber-400 to-orange-500 shadow-[0_20px_60px_-10px_rgba(251,191,36,0.5)] hover:shadow-[0_30px_80px_-10px_rgba(251,191,36,0.7)] transition-shadow"
             >
               <Send className="w-4 h-4 mr-2" />
-              Start Evaluation
+              {t("hero.ctaEvaluation")}
             </Link>
 
             <Link
@@ -244,7 +218,7 @@ export default function HeroSection() {
               className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-200 border border-white/20 hover:bg-white/5 transition-colors"
             >
               <ShieldCheck className="w-4 h-4 mr-2" />
-              Request Official Documents
+              {t("hero.ctaDocumentRequest")}
             </Link>
 
             <Link
@@ -252,7 +226,7 @@ export default function HeroSection() {
               className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-medium text-slate-200 border border-white/20 hover:bg-white/5 transition-colors"
             >
               <Languages className="w-4 h-4 mr-2" />
-              Translation Only
+              {t("hero.ctaTranslation")}
             </Link>
           </motion.div>
 
@@ -264,22 +238,22 @@ export default function HeroSection() {
           >
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>Secure, encrypted document handling</span>
+              <span>{t("hero.badgeSecure")}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-amber-400" />
-              <span>Institution-approved records when required</span>
+              <span>{t("hero.badgeInstitution")}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <Languages className="w-4 h-4 text-amber-400" />
-              <span>Certified translation (FR/ES → EN)</span>
+              <span>{t("hero.badgeTranslation")}</span>
             </div>
 
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-400" />
-              <span>Member, American Translators Association (ATA)</span>
+              <span>{t("hero.badgeAta")}</span>
             </div>
           </motion.div>
 
@@ -293,7 +267,7 @@ export default function HeroSection() {
               href="#family"
               className="inline-flex items-center gap-2 text-xs text-slate-300 bg-white/5 border border-white/10 rounded-full px-4 py-2 hover:bg-white/10 transition-colors"
             >
-              🌍 Handling this for family in Haiti? <span className="text-amber-300 underline underline-offset-2">See how it works</span>
+              🌍 {t("hero.familyCallout")} <span className="text-amber-300 underline underline-offset-2">{t("hero.familyCalloutLink")}</span>
             </a>
           </motion.div>
 
